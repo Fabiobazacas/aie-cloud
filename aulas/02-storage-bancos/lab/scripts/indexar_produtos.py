@@ -39,7 +39,9 @@ SEMANTIC_CONFIG_NAME = "produtos-semantic-config"
 def main():
     endpoint = os.environ["SEARCH_ENDPOINT"]
     storage_account = os.environ["STORAGE_ACCOUNT_NAME"]
-    credential = DefaultAzureCredential()
+    # exclude_managed_identity_credential: evita o "Timeout waiting for token
+    # from portal" do Cloud Shell — ver popular_produtos.py para o motivo.
+    credential = DefaultAzureCredential(exclude_managed_identity_credential=True)
 
     # 1. Criar índice
     print(f"→ Criando índice '{INDEX_NAME}' em {endpoint}...")

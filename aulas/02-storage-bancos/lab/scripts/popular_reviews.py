@@ -48,9 +48,11 @@ def main():
     # Em produção (Function/Container com Managed Identity própria) dá para usar
     # CosmosClient(endpoint, credential=DefaultAzureCredential()) direto, graças à
     # role data-plane concedida no Terraform (azurerm_cosmosdb_sql_role_assignment).
+    # exclude_managed_identity_credential: evita o "Timeout waiting for token
+    # from portal" do Cloud Shell — ver popular_produtos.py para o motivo.
     kv = SecretClient(
         vault_url=f"https://{kv_name}.vault.azure.net",
-        credential=DefaultAzureCredential(),
+        credential=DefaultAzureCredential(exclude_managed_identity_credential=True),
     )
     cosmos_key = kv.get_secret("cosmos-primary-key").value
 
