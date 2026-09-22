@@ -30,7 +30,12 @@ def main():
     kv_name = os.environ["KEY_VAULT_NAME"]
     storage_account = os.environ["STORAGE_ACCOUNT_NAME"]
 
-    credential = DefaultAzureCredential()
+    # exclude_managed_identity_credential: no Cloud Shell, a var de ambiente que
+    # sinaliza Managed Identity aponta pro "token broker" do próprio Cloud Shell,
+    # que não responde como MI de verdade — DefaultAzureCredential trava nela com
+    # "Timeout waiting for token from portal" e NÃO cai para AzureCliCredential
+    # (que é o que realmente funciona, via `az login`). Excluir força esse fallback.
+    credential = DefaultAzureCredential(exclude_managed_identity_credential=True)
 
     # 1. Ler connection string do Key Vault
     print(f"→ Lendo connection string de {kv_name}...")
