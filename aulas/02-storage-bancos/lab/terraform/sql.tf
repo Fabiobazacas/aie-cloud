@@ -42,5 +42,10 @@ resource "azurerm_mssql_database" "qc" {
   auto_pause_delay_in_minutes = 60
   min_capacity                = 0.5
   max_size_gb                 = 32
-  tags                        = local.tags
+  # O default do Azure é backup geo-redundante ("Geo"), que não está disponível
+  # em algumas regiões/assinaturas (ex.: contas Azure for Students em centralus),
+  # causando "ProvisioningDisabled: geo-redundant storage is not available".
+  # "Local" evita a dependência de geo-redundância (custo também menor).
+  storage_account_type = "Local"
+  tags                 = local.tags
 }

@@ -30,7 +30,13 @@ resource "azurerm_storage_container" "logs" {
   container_access_type = "private"
 }
 
-# Lifecycle policy: logs migram automaticamente para tiers mais baratos
+# Lifecycle policy: logs migram automaticamente para tiers mais baratos.
+# NÃO usa tier_to_archive: nesta assinatura, mesmo com StorageV2/LRS (config
+# que a Microsoft documenta como compatível), o Azure rejeita com
+# "FeatureNotSupportedForAccount: tierToArchive is not supported for the
+# account" — não é atraso de propagação (testado com time_sleep de 30s, mesmo
+# erro). Causa raiz não confirmada (possível Azure Policy da assinatura Azure
+# for Students restringindo o tier Archive). Ver troubleshooting no guia.
 resource "azurerm_storage_management_policy" "lifecycle" {
   storage_account_id = azurerm_storage_account.qc.id
 
@@ -43,9 +49,8 @@ resource "azurerm_storage_management_policy" "lifecycle" {
     }
     actions {
       base_blob {
-        tier_to_cool_after_days_since_modification_greater_than    = 30
-        tier_to_archive_after_days_since_modification_greater_than = 90
-        delete_after_days_since_modification_greater_than          = 365
+        tier_to_cool_after_days_since_modification_greater_than = 30
+        delete_after_days_since_modification_greater_than       = 365
       }
     }
   }
