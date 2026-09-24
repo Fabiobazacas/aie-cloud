@@ -96,6 +96,25 @@ EOF
 > credenciais da sessão já estão disponíveis no ambiente. Só é manual se
 > você estiver usando outro terminal.
 
+### Instalar o Terraform (1x por CloudShell)
+
+Diferente do `aws` CLI, o **Terraform não vem pré-instalado** no CloudShell.
+O `$HOME` do CloudShell é persistente (~1GB, entre sessões), então isso só
+precisa ser feito **uma vez**:
+
+```bash
+command -v terraform >/dev/null || {
+  curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip
+  unzip -o /tmp/terraform.zip -d ~/bin
+  echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+  export PATH=$HOME/bin:$PATH
+}
+terraform -version
+```
+
+> Se aparecer `command not found: unzip`, rode `sudo yum install -y unzip`
+> antes (CloudShell é Amazon Linux).
+
 ### Confirmar ferramentas
 
 ```bash

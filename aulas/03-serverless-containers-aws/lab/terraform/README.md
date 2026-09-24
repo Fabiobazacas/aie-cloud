@@ -23,6 +23,18 @@ Código IaC para provisionar a **camada de compute** da Quantum Commerce no
 
 ## Como usar (no AWS CloudShell)
 
+### Phase 0 — Instalar o Terraform (1x por CloudShell, não vem pré-instalado)
+
+```bash
+command -v terraform >/dev/null || {
+  curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip
+  unzip -o /tmp/terraform.zip -d ~/bin
+  echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+  export PATH=$HOME/bin:$PATH
+}
+terraform -version
+```
+
 ### Phase 1 — Provisionar tudo exceto Beanstalk (~2 min)
 
 ```bash
