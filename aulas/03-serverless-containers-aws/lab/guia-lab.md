@@ -115,6 +115,26 @@ terraform -version
 > Se aparecer `command not found: unzip`, rode `sudo yum install -y unzip`
 > antes (CloudShell é Amazon Linux).
 
+### Evitar "no space left on device"
+
+O provider da AWS sozinho passa de 400-500MB — fácil de estourar o `$HOME`
+persistente do CloudShell (~1GB, cota fixa). Antes do primeiro
+`terraform init`, mande os plugins pro `/tmp` (disco efêmero da VM, bem
+maior — não tem problema ser efêmero, a sessão do Academy já é temporária):
+
+```bash
+echo 'export TF_DATA_DIR=/tmp/tf-data' >> ~/.bashrc
+export TF_DATA_DIR=/tmp/tf-data
+mkdir -p $TF_DATA_DIR
+```
+
+> Se você já rodou `terraform init` antes de configurar isso e recebeu
+> `no space left on device`, rode `rm -rf .terraform .terraform.lock.hcl`
+> dentro de `lab/terraform` e refaça o `init` depois de exportar a variável
+> acima — ela só vale pro terminal atual, então se abrir um terminal novo do
+> CloudShell é só conferir com `echo $TF_DATA_DIR` (o `.bashrc` já cobre
+> isso a partir de agora).
+
 ### Confirmar ferramentas
 
 ```bash
@@ -354,6 +374,8 @@ A API que você implantou é a primeira **tool** que os agentes da QC vão consu
 |----------|-------|---------|
 | `InvalidClientTokenId` / `ExpiredToken` em qualquer comando `aws`/`terraform` | Faltou o `aws_session_token` ou a sessão de 4h expirou | Recolar as 3 credenciais de `~/.aws/credentials` (ver Preparação); clicar "Start Lab" de novo se a sessão caducou |
 | `AccessDenied: ... GetBucketObjectLockConfiguration ... explicit deny` no bucket do catálogo | Bug antigo e conhecido do provider AWS: o recurso `aws_s3_bucket` sempre tenta ler o Object Lock do bucket, e a `LabRole` nega essa chamada — acontece em qualquer versão do provider | Já corrigido no `s3.tf` (o bucket é criado via AWS CLI num `null_resource`, não via `aws_s3_bucket`). Se aparecer de novo, rode `git pull` pra garantir que está com a versão mais recente do lab |
+| `terraform init`/`apply` → `no space left on device` | `$HOME` do CloudShell é persistente mas só tem ~1GB, e o provider da AWS sozinho passa de 400MB | Configure `TF_DATA_DIR=/tmp/tf-data` **antes** do `init` (ver Preparação); se já tinha rodado `init` sem isso: `rm -rf .terraform .terraform.lock.hcl` e refaça o `init` |
+| `Error: Inconsistent dependency lock file` | O `.terraform.lock.hcl` ainda referencia uma versão de provider antiga (ex.: depois de um `git pull` que mudou `main.tf`) | Rode o `terraform init -upgrade` que a própria mensagem sugere |
 | `terraform apply` → região negada / `AuthFailure` | Região fora de `us-east-1`/`us-west-2` | Usar `-var="aws_region=us-east-1"` (ou `us-west-2`) |
 | Lambda retorna 500 "falha ao acessar S3" | Variável `S3_BUCKET_CATALOGO` não chegou ou objeto não subiu | Conferir `environment.variables` em `lambda.tf` + rodar `terraform apply` de novo |
 | `aws_elastic_beanstalk_environment` falha citando `vockey` | Key pair `vockey` só existe por padrão em `us-east-1` | Rodando em `us-west-2`: `aws ec2 create-key-pair --key-name vockey --region us-west-2 --query "KeyMaterial" --output text > vockey.pem` antes do apply |

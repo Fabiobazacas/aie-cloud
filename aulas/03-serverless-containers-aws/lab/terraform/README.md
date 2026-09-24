@@ -36,6 +36,18 @@ command -v terraform >/dev/null || {
 terraform -version
 ```
 
+### Phase 0.5 — Evitar "no space left on device"
+
+O provider da AWS sozinho passa de 400-500MB — fácil de estourar o `$HOME`
+persistente do CloudShell (~1GB). Manda os plugins pro `/tmp` antes do
+`init` (ver [guia-lab.md](../guia-lab.md), seção Preparação, para detalhes):
+
+```bash
+echo 'export TF_DATA_DIR=/tmp/tf-data' >> ~/.bashrc
+export TF_DATA_DIR=/tmp/tf-data
+mkdir -p $TF_DATA_DIR
+```
+
 ### Phase 1 — Provisionar tudo exceto Beanstalk (~2 min)
 
 ```bash
