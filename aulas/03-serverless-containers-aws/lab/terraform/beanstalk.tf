@@ -3,13 +3,9 @@
 # Beanstalk com Docker de container único é o mais próximo disso no Academy
 # (mais parecido com ACI/App Service do que com um orquestrador completo).
 #
-# Por que não usar ECR aqui: cada sessão do Learner Lab é uma conta AWS
-# TEMPORÁRIA nova — não dá pra "pré-importar" uma imagem no ECR de cada aluno
-# como se fez com 'az acr import' no Azure (a conta nem existe antes da sessão
-# começar). E não existe Docker no AWS CloudShell para buildar/pushar local.
-# Solução: o Beanstalk Docker platform consegue puxar uma imagem PÚBLICA
-# direto de qualquer registry (GHCR/Docker Hub) via Dockerrun.aws.json — sem
-# nenhum passo de ECR do lado do aluno. Ver docker/README.md.
+# A imagem vem do ECR desta MESMA conta (ver ecr.tf) — o aluno builda e dá
+# push direto no AWS CloudShell (que tem Docker desde jan/2024) antes de
+# rodar este apply com beanstalk_enabled=true. Ver docker/README.md.
 data "aws_elastic_beanstalk_solution_stack" "docker" {
   most_recent = true
   name_regex  = "running Docker$"
@@ -32,7 +28,7 @@ data "archive_file" "beanstalk_bundle" {
     content = jsonencode({
       AWSEBDockerrunVersion = "1"
       Image = {
-        Name   = var.container_image
+        Name   = "${aws_ecr_repository.produtos_api.repository_url}:v1"
         Update = "true"
       }
       Ports = [

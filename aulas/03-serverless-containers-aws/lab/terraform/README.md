@@ -5,9 +5,9 @@ Código IaC para provisionar a **camada de compute** da Quantum Commerce no
 
 - Bucket S3 de catálogo **criado nesta aula** + upload automático do `produtos.csv`
 - Lambda (Python 3.12) com `LabRole` anexada + API Gateway HTTP API
-- Elastic Beanstalk (plataforma Docker, container único) — habilitado via flag
-  `beanstalk_enabled` depois de publicar a imagem pública (ver
-  [../docker/README.md](../docker/README.md))
+- Repositório ECR (`ecr.tf`) + Elastic Beanstalk (plataforma Docker, container
+  único) — habilitado via flag `beanstalk_enabled` depois de dar build+push
+  da imagem pro ECR direto no CloudShell (ver [../docker/README.md](../docker/README.md))
 
 > **Independente das demais aulas.** Este Terraform cria seu próprio bucket
 > de catálogo e sobe o CSV no `apply`.
@@ -66,7 +66,18 @@ Provisiona: bucket S3 do catálogo (com `produtos.csv`) + Lambda (v1-mock) + API
 terraform apply -auto-approve -var="lambda_version=v2-s3"
 ```
 
-### Phase 2 — Após publicar a imagem pública, habilitar o Beanstalk
+### Phase 1.5 — Build e push da imagem pro ECR (ver docker/README.md)
+
+```bash
+ECR_URL=$(terraform output -raw ecr_repository_url)
+cd ../docker
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$ECR_URL"
+docker build --platform linux/amd64 -t "$ECR_URL:v1" .
+docker push "$ECR_URL:v1"
+cd ../terraform
+```
+
+### Phase 2 — Com a imagem publicada, habilitar o Beanstalk
 
 ```bash
 terraform apply -auto-approve -var="lambda_version=v2-s3" -var="beanstalk_enabled=true"
@@ -86,12 +97,13 @@ terraform destroy -auto-approve -var="lambda_version=v2-s3" -var="beanstalk_enab
 | Arquivo | O que define |
 |---------|--------------|
 | [main.tf](main.tf) | Providers (aws, random, archive, null), sufixo aleatório, locals |
-| [variables.tf](variables.tf) | `aws_region`, `lambda_version`, `beanstalk_enabled`, `container_image`, `ec2_key_pair_name` |
+| [variables.tf](variables.tf) | `aws_region`, `lambda_version`, `beanstalk_enabled`, `ec2_key_pair_name` |
 | [iam.tf](iam.tf) | `data` sources para `LabRole`/`LabInstanceProfile` (nunca cria roles) |
 | [s3.tf](s3.tf) | Bucket do catálogo (via CLI, não `aws_s3_bucket` — ver acima) + upload do `produtos.csv` |
 | [lambda.tf](lambda.tf) | Zip do código (v1-mock/v2-s3) + Lambda + API Gateway HTTP API |
+| [ecr.tf](ecr.tf) | Repositório ECR pra imagem da Atividade 3 — criado desde a Phase 1 |
 | [beanstalk.tf](beanstalk.tf) | Elastic Beanstalk (application + application version + environment), condicional |
-| [outputs.tf](outputs.tf) | `s3_bucket_catalogo`, `lambda_function_name`, `api_gateway_url`, `beanstalk_url` |
+| [outputs.tf](outputs.tf) | `s3_bucket_catalogo`, `lambda_function_name`, `api_gateway_url`, `ecr_repository_url`, `beanstalk_url` |
 
 ## Outputs disponíveis
 
@@ -99,5 +111,6 @@ terraform destroy -auto-approve -var="lambda_version=v2-s3" -var="beanstalk_enab
 terraform output -raw s3_bucket_catalogo
 terraform output -raw lambda_function_name
 terraform output -raw api_gateway_url
+terraform output -raw ecr_repository_url
 terraform output -raw beanstalk_url   # só faz sentido com beanstalk_enabled=true
 ```

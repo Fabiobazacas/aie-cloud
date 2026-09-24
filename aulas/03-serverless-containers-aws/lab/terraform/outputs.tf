@@ -14,8 +14,13 @@ output "api_gateway_url" {
   value       = aws_apigatewayv2_api.http_api.api_endpoint
 }
 
-# Elastic Beanstalk (condicional)
+# ECR + Elastic Beanstalk (Atividade 3)
+output "ecr_repository_url" {
+  description = "URL do repositório ECR — destino do docker build/push (ver docker/README.md)"
+  value       = aws_ecr_repository.produtos_api.repository_url
+}
+
 output "beanstalk_url" {
   description = "URL do Elastic Beanstalk quando habilitado; do contrário, mensagem"
-  value       = var.beanstalk_enabled ? "http://${aws_elastic_beanstalk_environment.qc[0].cname}" : "Beanstalk ainda não habilitado — publique a imagem (docker/README.md) e rode 'terraform apply' com -var beanstalk_enabled=true"
+  value       = var.beanstalk_enabled ? "http://${aws_elastic_beanstalk_environment.qc[0].cname}" : "Beanstalk ainda não habilitado — dê build+push da imagem pro ECR (docker/README.md) e rode 'terraform apply' com -var beanstalk_enabled=true"
 }

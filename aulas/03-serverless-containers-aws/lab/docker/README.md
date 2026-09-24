@@ -12,55 +12,42 @@ Elastic Beanstalk** (plataforma Docker, container único).
 | [requirements.txt](requirements.txt) | Dependências (FastAPI + Uvicorn + boto3) |
 | [Dockerfile](Dockerfile) | Multi-stage build, imagem final leve (~150 MB) |
 
-## Por que não buildar/importar no CloudShell?
+## Onde buildar e pra onde publicar
 
-O **AWS CloudShell não tem daemon Docker** (mesma limitação do Azure Cloud
-Shell) — `docker build` não roda ali. E diferente do Azure (onde cada aluno
-tinha sua própria subscription persistente e podia `az acr import` uma
-imagem pronta pro seu ACR), no **Learner Lab cada sessão é uma conta AWS
-nova e temporária**: não existe "o ECR do aluno" antes da sessão começar, e a
-AWS não tem um comando de "importar de outro registry" que não precise de
-Docker (ao contrário do `az acr import`).
+O **AWS CloudShell tem Docker** desde jan/2024, em todas as regiões
+comerciais — inclusive `us-east-1` e `us-west-2`, as únicas liberadas no
+Learner Lab. Então o build acontece **direto no CloudShell**, sem precisar
+de máquina própria, Codespace, ou qualquer registry externo.
 
-**Solução:** a imagem é **construída no GitHub Actions** (o runner já tem
-Docker — ninguém precisa instalar nada localmente) **e publicada no GHCR**
-(registry público, fora da conta AWS), e o **Elastic Beanstalk puxa essa
-imagem pública diretamente** via `Dockerrun.aws.json` — sem nenhum passo de
-ECR do lado do aluno. O Terraform (`beanstalk.tf`) já gera esse
-`Dockerrun.aws.json` sozinho a partir da variável `container_image`.
+O destino é o **ECR desta mesma conta**: o Terraform (`ecr.tf`) já cria o
+repositório na Phase 1 do apply (mesmo com `beanstalk_enabled=false`) — só
+falta o aluno buildar a imagem e dar push nele antes de habilitar o
+Beanstalk. É a mesma ordem da versão Azure (ACR primeiro, depois o app que
+consome a imagem), só que tudo dentro da mesma sessão/conta temporária —
+sem passo de "publicar uma vez pra turma toda".
 
-> **ECR continua disponível** no Sandbox se você quiser experimentar
-> manualmente (build local + `docker push` para o seu próprio ECR), mas
-> **não é o caminho guiado deste lab** — não é necessário para os checkpoints.
+## Passo A — Build e push pro ECR (ALUNO, no CloudShell)
 
-## Passo A — Publicar a imagem (todo mundo consegue, sem instalar nada)
+```bash
+cd ~/aie-cloud/aulas/03-serverless-containers-aws/lab/terraform
+ECR_URL=$(terraform output -raw ecr_repository_url)
+cd ../docker
 
-Sem Docker local, sem PAT, sem `docker login` — o workflow
-[`.github/workflows/build-produtos-api-aws.yml`](../../../../.github/workflows/build-produtos-api-aws.yml)
-já faz tudo, usando o token automático do próprio GitHub Actions. Funciona
-igual pro professor (no repo principal) e pra **cada aluno que quiser
-reproduzir no seu próprio fork** — ninguém edita o workflow, ele publica
-sempre em `ghcr.io/<dono-do-repo-ou-fork>/produtos-api-aws:v1`.
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$ECR_URL"
 
-1. Se for reproduzir num fork (em vez do repo principal da turma): **Fork**
-   este repositório pro seu GitHub.
-2. Na aba **Actions** do seu repositório (ou do seu fork), habilite os
-   workflows se for a primeira vez (GitHub pede confirmação em forks).
-3. Selecione **"Build e publicar imagem — Aula 3 AWS (produtos-api)"** →
-   **Run workflow** → **Run workflow** de novo pra confirmar.
-4. Espere o ✅ verde (~1-2 min).
-5. **Torne o pacote público** (nasce privado por padrão, e o Elastic
-   Beanstalk não autentica num pull privado): no seu perfil/organização do
-   GitHub → **Packages → produtos-api-aws → Package settings → Danger Zone
-   → Change visibility → Public**.
-6. Sua imagem agora é `ghcr.io/SEU_USUARIO/produtos-api-aws:v1` (tudo em
-   minúsculas). Use esse valor na variável `container_image` do Terraform
-   (Passo B) se publicou no seu próprio fork; se o professor já publicou no
-   repo principal, use o valor padrão de `variables.tf` sem mudar nada.
+# IMPORTANTE: Elastic Beanstalk roda linux/amd64 — force a plataforma (essencial em Mac ARM)
+docker build --platform linux/amd64 -t "$ECR_URL:v1" .
+docker push "$ECR_URL:v1"
+```
+
+> Troque `us-east-1` pela região que você está usando, se for `us-west-2`
+> (mesma região do `terraform apply`).
 
 ## Passo B — Habilitar o Beanstalk (ALUNO, no CloudShell)
 
-Nenhum build, push ou import — só apontar o Terraform pra imagem pública já publicada:
+Com a imagem já publicada no ECR, só apontar o Terraform pra habilitar o
+Beanstalk (o `Dockerrun.aws.json` já referencia `ecr_repository_url:v1`
+automaticamente, sem precisar passar nenhuma variável):
 
 ```bash
 cd ~/aie-cloud/aulas/03-serverless-containers-aws/lab/terraform
@@ -68,8 +55,9 @@ cd ~/aie-cloud/aulas/03-serverless-containers-aws/lab/terraform
 terraform apply -auto-approve -var="lambda_version=v2-s3" -var="beanstalk_enabled=true"
 ```
 
-Tempo: ~4-6 min — Elastic Beanstalk sobe uma instância EC2, faz `docker pull`
-da imagem e inicia o container.
+Tempo: ~4-6 min — Elastic Beanstalk sobe uma instância EC2, faz `docker
+pull` do ECR (via `LabInstanceProfile`, sem credencial extra) e inicia o
+container.
 
 ## Testar o Beanstalk
 

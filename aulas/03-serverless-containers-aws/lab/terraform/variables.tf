@@ -21,15 +21,9 @@ variable "lambda_version" {
 }
 
 variable "beanstalk_enabled" {
-  description = "Quando true, provisiona o Elastic Beanstalk (Atividade 3). Deixe false até ter a imagem pública publicada (ver docker/README.md)."
+  description = "Quando true, provisiona o Elastic Beanstalk (Atividade 3). Deixe false até ter feito build+push da imagem pro ECR (ver docker/README.md)."
   type        = bool
   default     = false
-}
-
-variable "container_image" {
-  description = "Imagem pública (GHCR ou Docker Hub) que o Elastic Beanstalk vai rodar — ver docker/README.md (Passo A). Se você publicou no seu próprio fork, troque para ghcr.io/SEU_USUARIO/produtos-api-aws:v1"
-  type        = string
-  default     = "ghcr.io/fabiobazacas/produtos-api-aws:v1"
 }
 
 variable "ec2_key_pair_name" {
