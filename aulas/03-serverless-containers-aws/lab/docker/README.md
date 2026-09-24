@@ -22,39 +22,41 @@ nova e temporária**: não existe "o ECR do aluno" antes da sessão começar, e 
 AWS não tem um comando de "importar de outro registry" que não precise de
 Docker (ao contrário do `az acr import`).
 
-**Solução:** a imagem é **construída e publicada uma vez no GHCR pelo
-professor** (registry público, fora da conta AWS), e o **Elastic Beanstalk
-puxa essa imagem pública diretamente** via `Dockerrun.aws.json` — sem
-nenhum passo de ECR do lado do aluno. O Terraform (`beanstalk.tf`) já gera
-esse `Dockerrun.aws.json` sozinho a partir da variável `container_image`.
+**Solução:** a imagem é **construída no GitHub Actions** (o runner já tem
+Docker — ninguém precisa instalar nada localmente) **e publicada no GHCR**
+(registry público, fora da conta AWS), e o **Elastic Beanstalk puxa essa
+imagem pública diretamente** via `Dockerrun.aws.json` — sem nenhum passo de
+ECR do lado do aluno. O Terraform (`beanstalk.tf`) já gera esse
+`Dockerrun.aws.json` sozinho a partir da variável `container_image`.
 
 > **ECR continua disponível** no Sandbox se você quiser experimentar
 > manualmente (build local + `docker push` para o seu próprio ECR), mas
 > **não é o caminho guiado deste lab** — não é necessário para os checkpoints.
 
-## Passo A — Publicar no GHCR (PROFESSOR, 1× por turma)
+## Passo A — Publicar a imagem (todo mundo consegue, sem instalar nada)
 
-Feito numa máquina/Codespace **com Docker** (Codespaces já é `linux/amd64`, ideal):
+Sem Docker local, sem PAT, sem `docker login` — o workflow
+[`.github/workflows/build-produtos-api-aws.yml`](../../../../.github/workflows/build-produtos-api-aws.yml)
+já faz tudo, usando o token automático do próprio GitHub Actions. Funciona
+igual pro professor (no repo principal) e pra **cada aluno que quiser
+reproduzir no seu próprio fork** — ninguém edita o workflow, ele publica
+sempre em `ghcr.io/<dono-do-repo-ou-fork>/produtos-api-aws:v1`.
 
-```bash
-export GHCR_PAT=ghp_seu_token_aqui   # Settings → Developer settings → Personal access tokens (classic) → escopo write:packages
-
-cd aulas/03-serverless-containers-aws/lab/docker
-
-echo "$GHCR_PAT" | docker login ghcr.io -u elthonf --password-stdin
-
-# IMPORTANTE: Elastic Beanstalk roda linux/amd64 — force a plataforma (essencial em Mac ARM)
-docker build --platform linux/amd64 -t ghcr.io/elthonf/produtos-api-aws:v1 .
-docker push ghcr.io/elthonf/produtos-api-aws:v1
-```
-
-Depois, **torne o package público** (nasce privado por padrão, e o Elastic
-Beanstalk do aluno não tem como autenticar num pull privado):
-
-GitHub → **Packages → produtos-api-aws → Package settings → Danger Zone → Change visibility → Public**
-
-> Ajuste `elthonf` para o owner real do GHCR, se for outro, e atualize
-> `variables.tf` (`container_image`) e o exemplo no `guia-lab.md` de acordo.
+1. Se for reproduzir num fork (em vez do repo principal da turma): **Fork**
+   este repositório pro seu GitHub.
+2. Na aba **Actions** do seu repositório (ou do seu fork), habilite os
+   workflows se for a primeira vez (GitHub pede confirmação em forks).
+3. Selecione **"Build e publicar imagem — Aula 3 AWS (produtos-api)"** →
+   **Run workflow** → **Run workflow** de novo pra confirmar.
+4. Espere o ✅ verde (~1-2 min).
+5. **Torne o pacote público** (nasce privado por padrão, e o Elastic
+   Beanstalk não autentica num pull privado): no seu perfil/organização do
+   GitHub → **Packages → produtos-api-aws → Package settings → Danger Zone
+   → Change visibility → Public**.
+6. Sua imagem agora é `ghcr.io/SEU_USUARIO/produtos-api-aws:v1` (tudo em
+   minúsculas). Use esse valor na variável `container_image` do Terraform
+   (Passo B) se publicou no seu próprio fork; se o professor já publicou no
+   repo principal, use o valor padrão de `variables.tf` sem mudar nada.
 
 ## Passo B — Habilitar o Beanstalk (ALUNO, no CloudShell)
 

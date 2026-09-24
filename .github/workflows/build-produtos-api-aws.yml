@@ -1,0 +1,43 @@
+name: Build e publicar imagem — Aula 3 AWS (produtos-api)
+
+# Passo A do lab (aulas/03-serverless-containers-aws/lab/docker/README.md).
+# Só existe porque o AWS CloudShell não tem daemon Docker: em vez de pedir
+# Docker local + PAT do GHCR pra cada aluno, o build roda aqui (runner já
+# tem Docker) e publica usando o GITHUB_TOKEN automático — sem segredo
+# nenhum pra configurar.
+#
+# Funciona igual em qualquer fork: publica sempre em
+# ghcr.io/<dono-do-fork>/produtos-api-aws:v1, então cada aluno que rodar
+# isso no PRÓPRIO fork ganha a SUA própria imagem pública, sem editar este
+# arquivo. Ver o README do lab pra o passo a passo completo (Actions → Run
+# workflow → tornar o pacote público → apontar container_image pra ela).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descobrir dono do repositório em minúsculas (exigido pelo GHCR)
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: aulas/03-serverless-containers-aws/lab/docker
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ env.OWNER }}/produtos-api-aws:v1

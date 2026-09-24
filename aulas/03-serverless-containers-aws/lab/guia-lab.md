@@ -264,20 +264,32 @@ Anote no `entrega-grupo-aula03.md` do seu grupo:
 
 **Objetivo:** Levar o **mesmo código** (em FastAPI, empacotado em container)
 para rodar no **Elastic Beanstalk** — a alternativa disponível no Academy à
-falta de ECS/Fargate/EKS. A imagem já vem pronta (publicada no GHCR pelo
-professor); o Elastic Beanstalk a **puxa diretamente do registry público**.
+falta de ECS/Fargate/EKS. A imagem é publicada no GHCR (registry público,
+fora da conta AWS) e o Elastic Beanstalk a **puxa diretamente de lá**.
 
 ### Conferir o código FastAPI
 
 [docker/app.py](docker/app.py) tem a mesma lógica da Lambda v2-s3 (lê S3 via
 boto3), mas usando FastAPI. Ver [docker/README.md](docker/README.md) para o
-porquê de não haver um passo de build/import do lado do aluno aqui (sem
-Docker no CloudShell + cada sessão é uma conta AWS nova).
+porquê de não haver um passo de build/import local no CloudShell (sem
+Docker lá + cada sessão é uma conta AWS nova).
+
+### Passo 0 — Garantir que a imagem está publicada (se ainda não estiver)
+
+Se o `container_image` padrão (`variables.tf`) já foi publicado pra turma,
+pule pro Passo 1. Se não — ou se você quer reproduzir com a sua própria
+imagem — **não precisa de Docker local nem de PAT**: o GitHub Actions faz o
+build e publica pra você. Passo a passo completo em
+[docker/README.md](docker/README.md) (Passo A) — resumindo: Actions → Run
+workflow → aguardar o ✅ → tornar o pacote público → usar
+`ghcr.io/SEU_USUARIO/produtos-api-aws:v1` no `-var="container_image=..."`
+do Passo 1 abaixo.
 
 ### Passo 1 — Habilitar o Elastic Beanstalk
 
-Nenhum build, push ou import — o Terraform já sabe qual imagem pública usar
-(`var.container_image`, default `ghcr.io/elthonf/produtos-api-aws:v1`):
+Nenhum build, push ou import feito no CloudShell — o Terraform já sabe qual
+imagem pública usar (`var.container_image`, default
+`ghcr.io/fabiobazacas/produtos-api-aws:v1`):
 
 ```bash
 cd ~/aie-cloud/aulas/03-serverless-containers-aws/lab/terraform
@@ -380,7 +392,7 @@ A API que você implantou é a primeira **tool** que os agentes da QC vão consu
 | Lambda retorna 500 "falha ao acessar S3" | Variável `S3_BUCKET_CATALOGO` não chegou ou objeto não subiu | Conferir `environment.variables` em `lambda.tf` + rodar `terraform apply` de novo |
 | `aws_elastic_beanstalk_environment` falha citando `vockey` | Key pair `vockey` só existe por padrão em `us-east-1` | Rodando em `us-west-2`: `aws ec2 create-key-pair --key-name vockey --region us-west-2 --query "KeyMaterial" --output text > vockey.pem` antes do apply |
 | `data.aws_elastic_beanstalk_solution_stack` não encontra nenhuma stack | AWS mudou o nome da plataforma Docker disponível | Rodar `aws elasticbeanstalk list-available-solution-stacks --query "SolutionStacks[?contains(@,'Docker')]"` e ajustar o `name_regex` em `beanstalk.tf` |
-| Elastic Beanstalk fica "Severe"/"Degraded" | Imagem do GHCR está privada ou não existe | Professor: tornar `ghcr.io/elthonf/produtos-api-aws:v1` público (ver [docker/README.md](docker/README.md)) |
+| Elastic Beanstalk fica "Severe"/"Degraded" | Imagem do GHCR está privada ou não existe | Rodar o workflow do GitHub Actions e tornar o pacote público (ver [docker/README.md](docker/README.md), Passo A) — ou conferir se a imagem em `-var=container_image` realmente existe/está pública |
 | Elastic Beanstalk sobe mas `curl` dá timeout | Instância ainda inicializando / security group | Aguardar 1-2 min; conferir status com `aws elasticbeanstalk describe-environments` |
 | `terraform destroy` trava em `aws_elastic_beanstalk_environment` | Beanstalk demora a terminar a instância EC2 | Normal, aguardar — pode levar alguns minutos a mais que os outros recursos |
 | `docker: command not found` no CloudShell | Esperado — CloudShell não tem daemon Docker | Não precisa de Docker no aluno; ver [docker/README.md](docker/README.md) (a imagem já vem pronta e pública) |
