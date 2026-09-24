@@ -1,8 +1,12 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source = "hashicorp/aws"
+      # Fixado em 4.8.0: a partir da 4.9 o provider passou a chamar
+      # GetBucketObjectLockConfiguration ao ler qualquer aws_s3_bucket, e a
+      # LabRole do Academy nega essa API explicitamente — o apply quebra
+      # mesmo sem usar Object Lock. Não subir essa versão sem testar antes.
+      version = "= 4.8.0"
     }
     random = {
       source  = "hashicorp/random"
