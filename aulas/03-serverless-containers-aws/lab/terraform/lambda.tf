@@ -22,10 +22,12 @@ locals {
 # boto3 dentro do handler acessar o S3 sem nenhuma credencial no código,
 # mesmo papel que a Managed Identity cumpria no Azure.
 resource "aws_lambda_function" "catalogo" {
-  function_name    = "qc-catalogo-${random_string.sufixo.result}"
-  role             = data.aws_iam_role.lab_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.12"
+  function_name = "qc-catalogo-${random_string.sufixo.result}"
+  role          = data.aws_iam_role.lab_role.arn
+  handler       = "lambda_function.handler"
+  # Provider fixado em 4.8.0 (ver main.tf) só reconhece runtimes até
+  # python3.9 no schema — nenhum código deste lab usa sintaxe >= 3.10.
+  runtime          = "python3.9"
   filename         = local.lambda_zip_path
   source_code_hash = local.lambda_zip_hash
   timeout          = 10

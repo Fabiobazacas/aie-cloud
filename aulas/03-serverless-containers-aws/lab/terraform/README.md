@@ -4,7 +4,7 @@ Código IaC para provisionar a **camada de compute** da Quantum Commerce no
 **AWS Academy Learner Lab**:
 
 - Bucket S3 de catálogo **criado nesta aula** + upload automático do `produtos.csv`
-- Lambda (Python 3.12) com `LabRole` anexada + API Gateway HTTP API
+- Lambda (Python 3.9) com `LabRole` anexada + API Gateway HTTP API
 - Elastic Beanstalk (plataforma Docker, container único) — habilitado via flag
   `beanstalk_enabled` depois de publicar a imagem pública (ver
   [../docker/README.md](../docker/README.md))

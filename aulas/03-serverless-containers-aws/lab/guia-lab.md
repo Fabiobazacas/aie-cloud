@@ -137,7 +137,7 @@ Leia rapidamente cada `.tf` (3 min) — veja o [README do Terraform](terraform/R
 
 ## Atividade 1 — Lambda HTTP via Terraform
 
-**Objetivo:** Provisionar uma AWS Lambda (Python 3.12) com API Gateway HTTP
+**Objetivo:** Provisionar uma AWS Lambda (Python 3.9) com API Gateway HTTP
 API e fazer deploy de uma função HTTP simples (versão mock). Diferente do
 Azure (que precisa do CLI `func`), o **Terraform já faz o deploy do código**
 no próprio `apply` — não existe um passo separado de "publish".
