@@ -21,6 +21,9 @@ terraform.rc
 # Azure
 .azure/
 
+# AWS / Terraform archive_file build artifacts (zips gerados em tempo de apply)
+.build/
+
 # Python
 __pycache__/
 *.py[cod]
