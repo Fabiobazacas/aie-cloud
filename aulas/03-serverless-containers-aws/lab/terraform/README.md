@@ -4,7 +4,7 @@ Código IaC para provisionar a **camada de compute** da Quantum Commerce no
 **AWS Academy Learner Lab**:
 
 - Bucket S3 de catálogo **criado nesta aula** + upload automático do `produtos.csv`
-- Lambda (Python 3.9) com `LabRole` anexada + API Gateway HTTP API
+- Lambda (Python 3.12) com `LabRole` anexada + API Gateway HTTP API
 - Elastic Beanstalk (plataforma Docker, container único) — habilitado via flag
   `beanstalk_enabled` depois de publicar a imagem pública (ver
   [../docker/README.md](../docker/README.md))
@@ -20,6 +20,7 @@ Código IaC para provisionar a **camada de compute** da Quantum Commerce no
 | Não pode criar IAM roles novas | `iam.tf` só **lê** (`data`) `LabRole`/`LabInstanceProfile` — nunca cria `aws_iam_role` |
 | Sem ECS/Fargate/EKS/App Runner | Container roda em **Elastic Beanstalk** (Docker de container único) |
 | Sessão nova a cada "Start Lab" (conta temporária) | Nenhum recurso pressupõe estado de uma sessão anterior — tudo nasce e morre dentro do `apply`/`destroy` da sessão atual |
+| `LabRole` nega `s3:GetBucketObjectLockConfiguration` | O bucket do catálogo **não** usa o recurso `aws_s3_bucket` (seu Read dispara essa chamada e quebra o apply) — é criado via AWS CLI num `null_resource` (ver [s3.tf](s3.tf)) |
 
 ## Como usar (no AWS CloudShell)
 
@@ -72,10 +73,10 @@ terraform destroy -auto-approve -var="lambda_version=v2-s3" -var="beanstalk_enab
 
 | Arquivo | O que define |
 |---------|--------------|
-| [main.tf](main.tf) | Providers (aws, random, archive), sufixo aleatório, locals |
+| [main.tf](main.tf) | Providers (aws, random, archive, null), sufixo aleatório, locals |
 | [variables.tf](variables.tf) | `aws_region`, `lambda_version`, `beanstalk_enabled`, `container_image`, `ec2_key_pair_name` |
 | [iam.tf](iam.tf) | `data` sources para `LabRole`/`LabInstanceProfile` (nunca cria roles) |
-| [s3.tf](s3.tf) | Bucket do catálogo + upload do `produtos.csv` |
+| [s3.tf](s3.tf) | Bucket do catálogo (via CLI, não `aws_s3_bucket` — ver acima) + upload do `produtos.csv` |
 | [lambda.tf](lambda.tf) | Zip do código (v1-mock/v2-s3) + Lambda + API Gateway HTTP API |
 | [beanstalk.tf](beanstalk.tf) | Elastic Beanstalk (application + application version + environment), condicional |
 | [outputs.tf](outputs.tf) | `s3_bucket_catalogo`, `lambda_function_name`, `api_gateway_url`, `beanstalk_url` |

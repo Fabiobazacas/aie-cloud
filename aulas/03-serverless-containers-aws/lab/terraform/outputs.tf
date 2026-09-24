@@ -1,6 +1,6 @@
 output "s3_bucket_catalogo" {
   description = "Bucket S3 do catálogo (criado nesta aula, já com produtos.csv)"
-  value       = aws_s3_bucket.catalogo.bucket
+  value       = local.bucket_name
 }
 
 # Lambda + API Gateway

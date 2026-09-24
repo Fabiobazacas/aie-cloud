@@ -44,17 +44,19 @@ data "archive_file" "beanstalk_bundle" {
 
 resource "aws_s3_object" "beanstalk_bundle" {
   count  = var.beanstalk_enabled ? 1 : 0
-  bucket = aws_s3_bucket.catalogo.id
+  bucket = local.bucket_name
   key    = "beanstalk/app-${random_string.sufixo.result}.zip"
   source = data.archive_file.beanstalk_bundle[0].output_path
   etag   = data.archive_file.beanstalk_bundle[0].output_md5
+
+  depends_on = [null_resource.catalogo_bucket]
 }
 
 resource "aws_elastic_beanstalk_application_version" "qc" {
   count       = var.beanstalk_enabled ? 1 : 0
   name        = "v-${random_string.sufixo.result}"
   application = aws_elastic_beanstalk_application.qc.name
-  bucket      = aws_s3_bucket.catalogo.id
+  bucket      = local.bucket_name
   key         = aws_s3_object.beanstalk_bundle[0].key
 }
 
@@ -104,6 +106,6 @@ resource "aws_elastic_beanstalk_environment" "qc" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "S3_BUCKET_CATALOGO"
-    value     = aws_s3_bucket.catalogo.bucket
+    value     = local.bucket_name
   }
 }

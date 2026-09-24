@@ -137,7 +137,7 @@ Leia rapidamente cada `.tf` (3 min) — veja o [README do Terraform](terraform/R
 
 ## Atividade 1 — Lambda HTTP via Terraform
 
-**Objetivo:** Provisionar uma AWS Lambda (Python 3.9) com API Gateway HTTP
+**Objetivo:** Provisionar uma AWS Lambda (Python 3.12) com API Gateway HTTP
 API e fazer deploy de uma função HTTP simples (versão mock). Diferente do
 Azure (que precisa do CLI `func`), o **Terraform já faz o deploy do código**
 no próprio `apply` — não existe um passo separado de "publish".
@@ -353,6 +353,7 @@ A API que você implantou é a primeira **tool** que os agentes da QC vão consu
 | Problema | Causa | Solução |
 |----------|-------|---------|
 | `InvalidClientTokenId` / `ExpiredToken` em qualquer comando `aws`/`terraform` | Faltou o `aws_session_token` ou a sessão de 4h expirou | Recolar as 3 credenciais de `~/.aws/credentials` (ver Preparação); clicar "Start Lab" de novo se a sessão caducou |
+| `AccessDenied: ... GetBucketObjectLockConfiguration ... explicit deny` no bucket do catálogo | Bug antigo e conhecido do provider AWS: o recurso `aws_s3_bucket` sempre tenta ler o Object Lock do bucket, e a `LabRole` nega essa chamada — acontece em qualquer versão do provider | Já corrigido no `s3.tf` (o bucket é criado via AWS CLI num `null_resource`, não via `aws_s3_bucket`). Se aparecer de novo, rode `git pull` pra garantir que está com a versão mais recente do lab |
 | `terraform apply` → região negada / `AuthFailure` | Região fora de `us-east-1`/`us-west-2` | Usar `-var="aws_region=us-east-1"` (ou `us-west-2`) |
 | Lambda retorna 500 "falha ao acessar S3" | Variável `S3_BUCKET_CATALOGO` não chegou ou objeto não subiu | Conferir `environment.variables` em `lambda.tf` + rodar `terraform apply` de novo |
 | `aws_elastic_beanstalk_environment` falha citando `vockey` | Key pair `vockey` só existe por padrão em `us-east-1` | Rodando em `us-west-2`: `aws ec2 create-key-pair --key-name vockey --region us-west-2 --query "KeyMaterial" --output text > vockey.pem` antes do apply |
