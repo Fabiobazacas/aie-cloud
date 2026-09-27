@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic
+streamlit
+requests
+boto3
+pytest
+httpx
