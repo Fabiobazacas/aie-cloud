@@ -4,11 +4,11 @@
 
 Ao final desta aula, você será capaz de:
 
-- Transcrever um PDF (inclusive digitalizado/escaneado) usando um **LLM multimodal** via **Amazon Bedrock**, em vez de OCR tradicional.
-- Gerar **embeddings** de texto com Bedrock (Titan Embeddings) e entender trade-offs de chunking.
+- Transcrever um PDF (inclusive digitalizado/escaneado) usando um **LLM multimodal** (Google Gemini), em vez de OCR tradicional.
+- Gerar **embeddings** de texto (Gemini `text-embedding-004`) e entender trade-offs de chunking.
 - Provisionar e consultar um **banco vetorial** com **Amazon RDS PostgreSQL + pgvector**.
 - Construir um **endpoint de RAG** (Retrieval-Augmented Generation) numa **Lambda** por trás de API Gateway: recebe uma pergunta, busca o contexto relevante no banco vetorial e usa um LLM pra responder com base nesse contexto.
-- Entender as implicações de rodar Lambda dentro de uma VPC pra acessar RDS e Bedrock (endpoints, custo, latência).
+- Entender as implicações de rodar Lambda dentro de uma VPC pra acessar RDS **e uma API externa** (endpoints AWS vs. NAT Gateway, custo, latência).
 
 ---
 
@@ -30,11 +30,19 @@ Esta aula constrói a **base de conhecimento** que os agentes da QC vão consult
 
 ---
 
-## ⚠️ Pré-requisito crítico: confirme o acesso ao Bedrock ANTES de tudo
+## ⚠️ Bedrock confirmado indisponível — use Gemini (free tier)
 
-O **Amazon Bedrock não estava na lista original de serviços levantados** para este Learner Lab (a mesma usada nas aulas 1-3). Ele pode estar disponível, ou pode não estar — **confirme isso na primeira atividade da aula**, antes de montar qualquer coisa em cima dele. Ver [exercicios.md](exercicios.md), Atividade 0.
+**Já confirmamos, numa sessão real deste Learner Lab, que o Amazon Bedrock
+não é liberado** (`aws bedrock list-foundation-models` nega por falta de
+policy, não por modelo desabilitado). Por isso este pipeline usa **Google
+Gemini** como provedor padrão — free tier sem cartão de crédito, cobre
+visão, texto e embeddings num único lugar. Cada grupo cria sua própria
+chave gratuita antes de começar — ver [exercicios.md](exercicios.md),
+Atividade 0.
 
-Se o Bedrock **não** estiver disponível na sua conta, o professor vai indicar a alternativa (API externa com chave própria) — a arquitetura do pipeline (ingestão → chunking → embeddings → pgvector → RAG) não muda, só troca de onde vem o LLM.
+Se a sua conta do Academy for uma exceção e liberar Bedrock de verdade, a
+arquitetura do pipeline (ingestão → chunking → embeddings → pgvector → RAG)
+não muda — só troca de onde vem o LLM (ver notas em cada exercício).
 
 ---
 
@@ -53,7 +61,7 @@ Esta aula gera a **4ª entrega de grupo** (10% da nota): instruções em [entreg
 ## Pré-requisitos
 
 - ✅ Sessão ativa no AWS Academy Learner Lab
-- ✅ Acesso a modelos no Amazon Bedrock **confirmado** (ver Atividade 0 do exercício)
+- ✅ Chave gratuita do Google Gemini criada (ver Atividade 0 do exercício — uma por grupo)
 - ✅ Nenhuma dependência das aulas anteriores — esta aula é autossuficiente (cria seu próprio S3, RDS e Lambda)
 
 > **Atenção ao tempo:** RDS demora ~10-15 min pra ficar disponível depois do `terraform apply`. Comece por aí antes de fazer qualquer outra coisa na sessão.

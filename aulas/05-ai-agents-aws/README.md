@@ -57,7 +57,7 @@ reconciliação financeira, etc.
 | Conceito | Azure (deck original) | AWS (este material) |
 |----------|------------------------|----------------------|
 | Gatilho por evento | Blob Storage + Event Grid → Logic App | S3 + S3 Event Notification → SQS |
-| Modelo do agente | Azure AI Foundry Agent Service (modelo por trás) | Amazon Bedrock (`anthropic.claude-3-haiku-20240307-v1:0`), com fallback `--mock` local |
+| Modelo do agente | Azure AI Foundry Agent Service (modelo por trás) | **Google Gemini** (`--provedor gemini`, free tier — confirmamos que o Bedrock não é liberado nesta conta do Learner Lab), com fallback `--provedor mock` local (padrão) |
 | Memória revisável | `MEMORY.md`/`MEMORIA-PENDENTE.md` em Storage Account | Os mesmos dois arquivos — local por padrão, ou S3 (`ARMAZENAMENTO=s3`) |
 | Custo | "Local: US$ 0,00. Na Azure: menos de US$ 1,00 por aluno" | Local: US$ 0,00. Camada opcional em AWS (S3+SQS): centavos |
 
@@ -74,16 +74,18 @@ muda** — só a infraestrutura por trás do gatilho e do modelo.
 | [lab/api/](lab/api/) | FastAPI: 14 operações, memória revisável, fila de exceções |
 | [lab/web/aplicacao.py](lab/web/aplicacao.py) | Painel Streamlit — 4 abas |
 | [lab/gatilho/](lab/gatilho/) | `disparador.py` (semear/observar) e `ciclo_do_agente.py` (uma volta) |
-| [lab/agente/](lab/agente/) | `openapi-agente.json` (5 de 14 operações) + cliente Bedrock (com `--mock`) |
+| [lab/agente/](lab/agente/) | `openapi-agente.json` (5 de 14 operações) + `cliente_llm.py` (mock/Gemini) |
 | [lab/terraform/](lab/terraform/) | Camada **opcional**: bucket S3 + fila SQS do gatilho por evento |
 | [exercicios.md](exercicios.md) | Após o lab — 4 exercícios em 3 níveis (🟢/🟡/🔴) |
 
 ## Pré-requisitos
 
 - ✅ Python 3.11+ local (o lab inteiro roda sem nenhuma conta de nuvem)
+- ✅ Opcional: uma chave gratuita do [Google Gemini](https://aistudio.google.com/apikey)
+  (`GEMINI_API_KEY`), só para rodar o agente com LLM de verdade
+  (`--provedor gemini`) — cada grupo cria a própria, sem custo
 - ✅ Opcional: sessão ativa no AWS Academy Learner Lab, só para a Atividade
-  extra (gatilho via S3+SQS) ou para rodar o agente com Bedrock de verdade
-  (`--mock=false`)
+  extra (gatilho via S3+SQS)
 
 > **Aula independente.** Não depende de nenhuma aula anterior deste
 > repositório — nem mesmo do bucket S3 criado nas Aulas 3/4.

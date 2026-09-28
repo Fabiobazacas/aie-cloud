@@ -123,13 +123,13 @@ d) **Reflexão:** essa métrica devia olhar pra taxa **acumulada desde
 **Pergunta que abre o exercício:** ajuda, ou vira teatro?
 
 Antes de uma proposta chegar em `MEMORIA-PENDENTE.md` (ou antes de um humano
-aprová-la), um **segundo agente** — outra chamada ao Bedrock, com um prompt
+aprová-la), um **segundo agente** — outra chamada ao Gemini, com um prompt
 diferente, focado em achar problemas — dá uma opinião sobre a proposta.
 
 **Sua tarefa:**
 
-a) Em [lab/agente/cliente_bedrock.py](lab/agente/cliente_bedrock.py),
-   implemente `criticar_proposta(texto_proposta: str, contexto_nota: dict, mock: bool = True) -> dict`,
+a) Em [lab/agente/cliente_llm.py](lab/agente/cliente_llm.py),
+   implemente `criticar_proposta(texto_proposta: str, contexto_nota: dict, provedor: str = "mock") -> dict`,
    devolvendo algo como
    `{"concorda": bool, "objecao": str | None}`. O prompt do segundo agente
    deve ser **adversarial**: instrua-o explicitamente a procurar por
@@ -143,9 +143,9 @@ b) Ligue essa segunda opinião no fluxo de `ciclo_do_agente.py`: quando o
    — a proposta ainda vai pra fila, mas o humano vê a objeção antes de aprovar.
 
 c) Teste os dois caminhos: uma proposta que o segundo agente aprova sem
-   objeção, e uma que ele objeta (pode ser com `--mock`, retornando valores
-   fixos pros dois casos, ou com o Bedrock de verdade usando dois prompts
-   claramente diferentes).
+   objeção, e uma que ele objeta (pode ser com `provedor="mock"`, retornando
+   valores fixos pros dois casos, ou com `provedor="gemini"` de verdade
+   usando dois prompts claramente diferentes).
 
 d) **Reflexão (a pergunta central do exercício):**
    - Rodar dois agentes custa 2x mais chamadas de modelo por proposta. Em
@@ -162,18 +162,34 @@ d) **Reflexão (a pergunta central do exercício):**
 
 ---
 
-## Sobre usar Bedrock de verdade nestes exercícios
+## Sobre usar um LLM de verdade nestes exercícios
 
-Todos os exercícios acima funcionam inteiramente com o modo `--mock`
-(heurística local, custo zero). Se quiser usar o Bedrock de verdade em
-algum deles, confirme primeiro o acesso ao modelo (mesmo checkpoint das
-Aulas 3/4):
+Todos os exercícios acima funcionam inteiramente com `provedor="mock"`
+(heurística local, custo zero) — nenhum depende de LLM de verdade pra ser
+corrigido/avaliado.
 
-```bash
-aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[].modelId" --output table
-```
+**Sobre o Bedrock**: já confirmamos numa sessão real do AWS Academy Learner
+Lab que `aws bedrock list-foundation-models` devolve `AccessDeniedException`
+por falta de policy (a conta não libera Bedrock, não é questão de habilitar
+modelo). Por isso este lab usa **Google Gemini** como provedor real
+alternativo — gratuito, sem cartão de crédito, e independente de qualquer
+permissão da AWS:
 
-Se vier vazio ou `AccessDeniedException`, habilite `Anthropic Claude 3
-Haiku` em **Model access** no console do Bedrock, ou avise o professor se a
-conta do Academy não tiver Bedrock liberado — nenhum destes exercícios
-depende disso pra ser corrigido/avaliado, o modo `--mock` é aceitável.
+1. Cada **grupo** cria sua própria chave gratuita em
+   [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (login
+   com conta Google, ~2 minutos). Uma chave só pro grupo — se todo mundo da
+   turma usar a mesma chave, o rate limit do free tier estoura no meio da aula.
+2. Exporte a chave no terminal:
+   ```bash
+   export GEMINI_API_KEY="sua-chave-aqui"
+   ```
+3. Rode com `--provedor gemini`:
+   ```bash
+   python3 gatilho/ciclo_do_agente.py --uma-volta --provedor gemini
+   ```
+
+Se sua conta do Academy for uma das exceções que **libera** Bedrock de
+verdade, nada nesta arquitetura te impede de adicionar um provedor
+`"bedrock"` de volta em `cliente_llm.py` (o padrão de `_chamar_gemini` é
+fácil de replicar com `boto3` — ver histórico do arquivo ou o padrão usado
+nas Aulas 3/4) — mas isso é opcional, não é o caminho padrão deste material.

@@ -12,7 +12,7 @@
 
 Ao contrário das aulas anteriores, aqui **não existe um lab guiado em sala separado dos exercícios** — o exercício **é** o lab. Os 3 níveis constroem, em sequência, um pipeline de RAG completo: um PDF vira texto, o texto vira vetores, os vetores ficam pesquisáveis, e um endpoint Lambda responde perguntas com base neles.
 
-- 🟢 **Nível 1 — Básico:** ingestão do PDF e transcrição via LLM multimodal (Bedrock)
+- 🟢 **Nível 1 — Básico:** ingestão do PDF e transcrição via LLM multimodal (Google Gemini — ver Atividade 0)
 - 🟡 **Nível 2 — Intermediário:** chunking, embeddings e banco vetorial (RDS + pgvector)
 - 🔴 **Nível 3 — Avançado:** **bônus opcional** — endpoint Lambda de RAG completo, com métricas de custo/latência
 
@@ -34,19 +34,47 @@ Use o [template em `entregas/template-entrega-grupo.md`](../../entregas/template
 
 ---
 
-## Atividade 0 — Confirme o acesso ao Bedrock (faça isso primeiro)
+## Atividade 0 — Crie sua chave gratuita do Google Gemini (faça isso primeiro)
 
-Antes de escrever qualquer código, confirme que sua conta consegue de fato chamar modelos do Bedrock:
+**Já confirmamos, numa sessão real do AWS Academy Learner Lab, que o Bedrock
+não é liberado nesta conta** — `aws bedrock list-foundation-models` devolve
+`AccessDeniedException` por **falta de policy** (não é questão de habilitar
+um modelo específico no console; a API inteira está fora da permissão da
+sessão). Se quiser confirmar isso na sua própria conta:
 
 ```bash
 aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[].modelId" --output table
 ```
 
-Se a lista vier vazia ou o comando der `AccessDeniedException`, os modelos individuais provavelmente precisam ser **habilitados manualmente**: Console AWS → **Amazon Bedrock** → **Model access** (menu lateral) → **Manage model access** → habilite pelo menos um modelo de texto/visão (ex: `Anthropic Claude 3 Haiku`) e um de embeddings (`Amazon Titan Embeddings`). A aprovação costuma ser instantânea para esses modelos.
+Por isso este pipeline usa **Google Gemini** como provedor padrão — free
+tier sem cartão de crédito, cobre visão (transcrição), texto (geração) e
+embeddings num único provedor:
 
-**Se mesmo assim continuar bloqueado** (conta do Academy sem Bedrock liberado de verdade — isso é uma possibilidade real, não estava confirmado na lista de serviços original), avise o professor. A arquitetura do exercício não muda: só troca a chamada `bedrock-runtime` por uma chamada HTTP a uma API externa (Anthropic ou OpenAI, com chave própria do grupo) nos mesmos pontos do pipeline. Todo o resto — S3, RDS/pgvector, Lambda, API Gateway — continua igual.
+1. Cada **grupo** cria sua própria chave em
+   [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (login
+   com conta Google, ~2 minutos, sem cartão).
+2. **Não compartilhe a chave entre grupos** — o rate limit do free tier é
+   por chave; se a turma inteira usar a mesma chave ao mesmo tempo, todo
+   mundo toma `429 Too Many Requests`.
+3. No CloudShell, exporte a chave (vale só pro terminal atual — refaça se
+   abrir um terminal novo):
+   ```bash
+   export GEMINI_API_KEY="sua-chave-aqui"
+   ```
+4. Teste com uma chamada simples:
+   ```bash
+   curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"contents":[{"parts":[{"text":"responda só OK"}]}]}'
+   ```
 
-**✅ Checkpoint:** `aws bedrock list-foundation-models` retorna pelo menos um modelo de texto e um de embeddings? Anote os `modelId` que forem habilitados — vai precisar deles nos exercícios seguintes.
+> **Se a sua conta do Academy for uma exceção e liberar Bedrock de
+> verdade**, nada impede de usar `bedrock-runtime`/Titan Embeddings em vez
+> de Gemini nos scripts abaixo — a arquitetura (S3, RDS/pgvector, Lambda,
+> API Gateway) não muda, só o transporte da chamada ao modelo. Mas o padrão
+> deste material, a partir daqui, é Gemini.
+
+**✅ Checkpoint:** o `curl` acima devolve um JSON com `"text": "OK"` (ou parecido) dentro de `candidates`? Guarde a `GEMINI_API_KEY` — vai precisar dela nos exercícios seguintes.
 
 ---
 
@@ -66,20 +94,20 @@ resource "aws_s3_bucket" "rag_docs" {
 
 ### Exercício 1.2 — Transcrever o PDF com um LLM multimodal
 
-Em vez de Textract ou Tesseract, transcreva cada página do PDF **enviando a imagem da página pra um modelo Bedrock com visão** (ex: Claude 3 Haiku/Sonnet via Bedrock). Isso é o que a indústria vem chamando de "LLM-based OCR" — funciona melhor que OCR tradicional em documentos com tabelas, formatação irregular ou baixa qualidade de digitalização.
+Em vez de Textract ou Tesseract, transcreva cada página do PDF **enviando a imagem da página pra um modelo com visão** (Google Gemini, ver Atividade 0). Isso é o que a indústria vem chamando de "LLM-based OCR" — funciona melhor que OCR tradicional em documentos com tabelas, formatação irregular ou baixa qualidade de digitalização.
 
 Passo a passo do script (`transcrever_pdf.py`):
 
 ```python
 import base64
-import io
-import json
+import os
 
-import boto3
 import fitz  # PyMuPDF — pip install pymupdf
+import requests  # pip install requests
 
-bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
-MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"  # troque pelo modelId habilitado na Atividade 0
+GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]  # criada na Atividade 0
+MODEL_ID = "gemini-2.0-flash"  # confira o nome atual em ai.google.dev/gemini-api/docs/models
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_ID}:generateContent"
 
 
 def pagina_para_base64_png(pagina, zoom=2.0):
@@ -88,19 +116,18 @@ def pagina_para_base64_png(pagina, zoom=2.0):
 
 
 def transcrever_pagina(imagem_b64: str) -> str:
-    body = {
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 2000,
-        "messages": [{
-            "role": "user",
-            "content": [
-                {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": imagem_b64}},
-                {"type": "text", "text": "Transcreva TODO o texto visível nesta página, na ordem de leitura. Preserve tabelas como texto estruturado. Não resuma, não comente — só a transcrição."},
-            ],
+    corpo = {
+        "contents": [{
+            "parts": [
+                {"inline_data": {"mime_type": "image/png", "data": imagem_b64}},
+                {"text": "Transcreva TODO o texto visível nesta página, na ordem de leitura. Preserve tabelas como texto estruturado. Não resuma, não comente — só a transcrição."},
+            ]
         }],
+        "generationConfig": {"maxOutputTokens": 2000},
     }
-    resp = bedrock.invoke_model(modelId=MODEL_ID, body=json.dumps(body))
-    return json.loads(resp["body"].read())["content"][0]["text"]
+    resp = requests.post(URL, params={"key": GEMINI_API_KEY}, json=corpo, timeout=30)
+    resp.raise_for_status()
+    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def transcrever_pdf(caminho_pdf: str) -> list[str]:
@@ -118,7 +145,12 @@ if __name__ == "__main__":
         print(f"--- Página {i} ---\n{texto}\n")
 ```
 
-Rode isso no CloudShell (`pip install --user pymupdf boto3` primeiro) contra o seu PDF de teste.
+> Se sua conta liberar Bedrock de verdade, o equivalente é
+> `bedrock.invoke_model(modelId="anthropic.claude-3-haiku-...", body=...)`
+> com `{"type": "image", "source": {...}}` no lugar de `inline_data` — mesma
+> ideia, formato de payload diferente.
+
+Rode isso no CloudShell (`pip install --user pymupdf requests` primeiro) contra o seu PDF de teste.
 
 **✅ Checkpoint L₁:** o script imprime a transcrição de cada página? Salve o resultado — o Exercício 2.2 usa esse texto.
 
@@ -128,7 +160,7 @@ Responda no `entrega-grupo-aula04.md`:
 
 a) Cite 2 cenários onde OCR tradicional (Textract, Tesseract) ainda ganha do LLM de visão em custo, e 2 onde o LLM de visão ganha em qualidade.
 b) O prompt do Exercício 1.2 pede pra "não resumir, não comentar". O que acontece com o pipeline de RAG se o modelo resumir a página em vez de transcrever? Por que isso é um problema pra retrieval?
-c) Estime o custo de transcrever os **200 catálogos de fornecedores da QC** (~15 páginas cada, em média) com o modelo que você habilitou. Use a página de pricing do Bedrock pra achar o preço por token de imagem + output do modelo escolhido.
+c) Estime o custo de transcrever os **200 catálogos de fornecedores da QC** (~15 páginas cada, em média) com o modelo que você usou. Confira se seu volume ainda cabe no free tier do Gemini (rate limit por minuto/dia) ou se passaria pro tier pago — use a [página de pricing do Gemini API](https://ai.google.dev/gemini-api/docs/pricing) pra estimar o custo além do free tier.
 
 ---
 
@@ -180,7 +212,7 @@ CREATE TABLE documentos_qc (
     fonte TEXT NOT NULL,
     pagina INT NOT NULL,
     chunk_texto TEXT NOT NULL,
-    embedding VECTOR(1024)  -- dimensão do Titan Embeddings v2; ajuste se usar outro modelo
+    embedding VECTOR(768)  -- dimensão do text-embedding-004 do Gemini; ajuste se usar outro modelo
 );
 
 CREATE INDEX ON documentos_qc USING hnsw (embedding vector_cosine_ops);
@@ -192,15 +224,18 @@ O texto transcrito no Exercício 1.2 precisa ser dividido em **chunks** antes de
 
 a) Implemente uma função de chunking simples (por parágrafo ou por tamanho fixo com overlap, ex: 500 caracteres com 50 de overlap).
 
-b) Para cada chunk, gere o embedding via Bedrock (Titan Embeddings):
+b) Para cada chunk, gere o embedding via Gemini (`text-embedding-004`):
 
 ```python
 def gerar_embedding(texto: str) -> list[float]:
-    resp = bedrock.invoke_model(
-        modelId="amazon.titan-embed-text-v2:0",
-        body=json.dumps({"inputText": texto}),
+    resp = requests.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
+        params={"key": GEMINI_API_KEY},
+        json={"content": {"parts": [{"text": texto}]}},
+        timeout=30,
     )
-    return json.loads(resp["body"].read())["embedding"]
+    resp.raise_for_status()
+    return resp.json()["embedding"]["values"]  # lista de 768 floats
 ```
 
 c) Insira cada chunk + embedding na tabela `documentos_qc` (via `psycopg2`, usando a senha do Secrets Manager do Exercício 2.1).
@@ -226,10 +261,10 @@ c) Em que ponto faria mais sentido migrar de RDS+pgvector pra um serviço de vec
 Construa uma Lambda + API Gateway com uma rota `/perguntar` que implementa o ciclo completo de RAG:
 
 1. Recebe `{"pergunta": "..."}` no body.
-2. Gera o embedding da pergunta (Bedrock Titan Embeddings — mesmo modelo do Exercício 2.2, embeddings de perguntas e documentos **precisam** vir do mesmo modelo).
+2. Gera o embedding da pergunta (Gemini `text-embedding-004` — mesmo modelo do Exercício 2.2, embeddings de perguntas e documentos **precisam** vir do mesmo modelo).
 3. Busca os top-k chunks mais similares no `documentos_qc` (RDS/pgvector).
 4. Monta um prompt com a pergunta + os chunks recuperados como contexto.
-5. Chama um modelo de texto do Bedrock (ex: Claude 3 Haiku) pra responder **só com base no contexto fornecido**.
+5. Chama um modelo de texto do Gemini (`gemini-2.0-flash`) pra responder **só com base no contexto fornecido**.
 6. Retorna `{"resposta": "...", "fontes": [{"fonte": ..., "pagina": ...}, ...]}`.
 
 **Sobre a Lambda estar numa VPC:** como o RDS não é público (`publicly_accessible = false`, correto — nunca exponha um banco), a Lambda **precisa estar na mesma VPC** pra alcançá-lo:
@@ -263,11 +298,26 @@ data "aws_subnets" "default" {
 }
 ```
 
-> **Ponto de atenção real (não é detalhe cosmético):** uma Lambda dentro de uma VPC **não tem acesso à internet por padrão** — só alcança o que está na própria VPC (como o RDS) a menos que a subnet tenha rota pra um NAT Gateway. Como o Bedrock é um serviço regional acessado via HTTPS, a Lambda dentro da VPC vai falhar ao chamar `bedrock-runtime` sem uma dessas duas soluções:
-> 1. **VPC Interface Endpoint** pra `com.amazonaws.<região>.bedrock-runtime` (recomendado — sem custo de NAT Gateway, mais barato pra esse cenário).
-> 2. NAT Gateway (mais caro, evite se possível — cobra por hora **e** por GB).
+> **Ponto de atenção real (não é detalhe cosmético):** uma Lambda dentro de uma VPC **não tem acesso à internet por padrão** — só alcança o que está na própria VPC (como o RDS), a menos que a subnet tenha rota pra um **NAT Gateway**.
 >
-> Adicione o endpoint da VPC no Terraform e teste antes de assumir que "devia funcionar".
+> Se sua Lambda chamasse o **Bedrock**, a solução mais barata seria um **VPC
+> Interface Endpoint** pra `com.amazonaws.<região>.bedrock-runtime` (sem
+> custo de NAT Gateway) — mas isso só funciona pra **serviços da própria
+> AWS**. O **Gemini é uma API externa** (`generativelanguage.googleapis.com`),
+> então essa opção não existe aqui: a Lambda **precisa de um NAT Gateway**
+> pra alcançar a internet de dentro da VPC.
+>
+> Isso é um custo real que o desenho original (100% dentro da AWS, via
+> Bedrock) evitava e que o fallback pra uma API externa introduz — cobra por
+> hora **e** por GB trafegado. Para o volume de um lab, o custo é pequeno,
+> mas é o tipo de coisa que muda a conta em produção. Adicione o NAT Gateway
+> no Terraform (`aws_nat_gateway` + rota na tabela de rotas da subnet
+> privada) e teste antes de assumir que "devia funcionar".
+>
+> **Reflexão:** compare o custo mensal de um NAT Gateway (~$0,045/h + $0,045/GB)
+> rodando 24/7 com o custo de simplesmente reduzir o volume de chamadas
+> externas (ex.: cache de respostas repetidas). Pra um endpoint de baixo
+> tráfego, qual estratégia você recomendaria pra QC?
 
 ### Exercício 3.2 — Métricas de custo e latência
 
@@ -275,7 +325,7 @@ Rode 10 perguntas de teste contra o endpoint e meça:
 
 a) Latência ponta a ponta (embedding da pergunta + busca pgvector + geração da resposta) — quebre por etapa.
 b) Custo por pergunta (tokens de embedding da pergunta + tokens de input/output do modelo de geração).
-c) Compare: se a QC receber 100 mil perguntas/mês nesse endpoint, qual o custo mensal só de chamadas ao Bedrock?
+c) Compare: se a QC receber 100 mil perguntas/mês nesse endpoint, esse volume ainda cabe no free tier do Gemini, ou passaria pro tier pago? Qual o custo mensal estimado (chamadas ao modelo + o NAT Gateway rodando 24/7)?
 
 ### Exercício 3.3 — Bônus extra
 
@@ -306,7 +356,7 @@ A entrega é **um ZIP por grupo** (`entrega-grupo-NN-aula04.zip`) no Portal FIAP
 | Item | Obrigatório? | Pontos máximos |
 |------|--------------|-----------------|
 | Cabeçalho do grupo + distribuição do trabalho | ✅ Sim | 1 pt (Critério 4) |
-| 🟢 N1 — Atividade 0 (verificação Bedrock) + 1.1, 1.2, 1.3 | ✅ Sim | 3 pts (Critério 1) |
+| 🟢 N1 — Atividade 0 (chave do Gemini) + 1.1, 1.2, 1.3 | ✅ Sim | 3 pts (Critério 1) |
 | 🟡 N2 — 2.1 (RDS + pgvector), 2.2 (chunking + embeddings), 2.3 (custo/escala) | ✅ Sim | 3 pts (Critério 2) + 2 pts qualidade técnica (Critério 3) |
 | 🔴 N3 — 3.1 (Lambda de RAG), 3.2 (métricas), 3.3 (bônus escolhido) | 🎁 Bônus | até +2 pts extras |
 | Reflexão coletiva ao final | ✅ Sim | 1 pt (Critério 5) |

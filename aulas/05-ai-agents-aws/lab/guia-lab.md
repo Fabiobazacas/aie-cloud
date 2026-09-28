@@ -39,9 +39,16 @@ python3 -m venv .venv && source .venv/bin/activate   # opcional, mas recomendado
 pip install -r requirements.txt
 ```
 
-Nenhuma credencial AWS é necessária pra esta parte — tudo roda com arquivos
-locais em `dados/`. A camada opcional em AWS (Atividade extra, ao final)
-usa as mesmas credenciais de sessão do Academy que você já usou nas Aulas 3/4.
+Nenhuma credencial é necessária pra esta parte — tudo roda com arquivos
+locais em `dados/`, decidindo com uma heurística (`--provedor mock`, padrão).
+Duas coisas opcionais, só se quiser ir além do padrão:
+
+- **LLM de verdade** (`--provedor gemini` na Atividade 3): crie uma chave
+  gratuita, sem cartão, em [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+  (uma por grupo — não compartilhe a mesma chave entre grupos, o rate limit
+  do free tier é por chave) e exporte: `export GEMINI_API_KEY="..."`.
+- **Camada em AWS** (Atividade extra, ao final): usa as mesmas credenciais
+  de sessão do Academy que você já usou nas Aulas 3/4.
 
 ---
 
@@ -104,10 +111,13 @@ Você deve ver, em ordem:
 3. `[exceção]` — nenhuma regra aprovada cobre o caso; o agente **propõe** uma
    regra nova (vai pra `MEMORIA-PENDENTE.md`) e a nota fica esperando decisão humana.
 
-> Por padrão o agente decide via uma **heurística local (`--mock`, default)** —
-> zero chamadas à AWS. Pra usar o Bedrock de verdade (Claude via
-> `bedrock-runtime`), rode com `--mock=false` — precisa de credenciais de
-> sessão válidas e do modelo habilitado (`anthropic.claude-3-haiku-20240307-v1:0`).
+> Por padrão o agente decide via uma **heurística local (`--provedor mock`,
+> default)** — zero chamadas de rede. Pra usar um LLM de verdade, rode com
+> `--provedor gemini` — precisa de uma `GEMINI_API_KEY` própria (gratuita,
+> sem cartão: [aistudio.google.com/apikey](https://aistudio.google.com/apikey)).
+> Não usamos Bedrock aqui: já confirmamos numa sessão real do Learner Lab que
+> essa conta do AWS Academy nega `bedrock:ListFoundationModels` por falta de
+> policy — não é algo que dê pra contornar habilitando um modelo no console.
 
 **✅ Checkpoint:** os três desfechos apareceram na ordem certa? Confira a aba **Exceções** do painel — a 3ª nota deve estar lá.
 
@@ -187,8 +197,8 @@ python3 -m pytest api/testes/ -v
 ```
 
 Nenhum teste faz chamada de rede — `conftest.py` isola cada teste num
-diretório de dados temporário e todos os testes usam a heurística local, não
-o Bedrock.
+diretório de dados temporário e todos os testes usam a heurística local
+(`provedor="mock"`), nunca o Gemini de verdade.
 
 **✅ Checkpoint:** todos os testes passam?
 
@@ -253,13 +263,15 @@ fiscais.
 | `403` mesmo mandando `X-Auditor` | Header vazio (`X-Auditor:` sem valor) ou nome só com espaços | A API exige um nome não-vazio — confira o valor exato do header enviado |
 | `pytest` falha em paralelo com o servidor rodando | Os testes usam um diretório de dados temporário isolado (`conftest.py`), então isso não deveria acontecer — se acontecer, confira se algum teste esqueceu de usar a fixture `dados_isolados` | Reveja `api/testes/conftest.py` — a fixture é `autouse=True`, não deveria precisar declarar manualmente |
 | Atividade extra: `terraform apply` falha em `aws_s3_bucket_notification` | A fila SQS ainda não tem a policy aplicada (ordem de criação) | Já coberto por `depends_on` em `s3.tf` — se acontecer mesmo assim, rode `terraform apply` de novo (idempotente) |
+| `RuntimeError: GEMINI_API_KEY não definida` ao rodar `--provedor gemini` | Chave não exportada nesse terminal (a variável não persiste entre terminais diferentes) | `export GEMINI_API_KEY="..."` no MESMO terminal onde vai rodar o comando; crie a chave em [aistudio.google.com/apikey](https://aistudio.google.com/apikey) se ainda não tiver |
+| `429 Too Many Requests` chamando o Gemini | Vários grupos usando a MESMA chave ao mesmo tempo — o rate limit do free tier é por chave, não por pessoa | Cada grupo precisa da própria `GEMINI_API_KEY`; nunca compartilhe uma chave entre grupos |
 
 ---
 
 ## Referências
 
 - [Amazon SQS — Event notifications from S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/NotificationHowTo.html)
-- [Amazon Bedrock — Converse API](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html)
+- [Google Gemini API — Text generation](https://ai.google.dev/gemini-api/docs/text-generation)
 - [FastAPI — Header parameters](https://fastapi.tiangolo.com/tutorial/header-params/)
 - [Streamlit documentation](https://docs.streamlit.io/)
 - [OWASP Top 10 for LLM Applications — LLM06: Excessive Agency](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
