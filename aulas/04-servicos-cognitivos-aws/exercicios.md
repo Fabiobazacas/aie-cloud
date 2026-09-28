@@ -150,6 +150,27 @@ if __name__ == "__main__":
 > com `{"type": "image", "source": {...}}` no lugar de `inline_data` — mesma
 > ideia, formato de payload diferente.
 
+> **Alternativa sem chave nenhuma — AWS Textract (confirmado disponível
+> nesta conta):** diferente do Bedrock, já testamos e o **Textract funciona**
+> nesta conta do Learner Lab, sem precisar de `GEMINI_API_KEY` nem de
+> nenhuma outra chave — só a `LabRole` que a Lambda/CloudShell já usa. Ele
+> resolve **só a extração de texto** (não gera embeddings nem responde
+> perguntas), então mesmo usando Textract aqui, os Exercícios 2.x e 3.x
+> continuam precisando do Gemini. Se seu grupo quiser comparar as duas
+> abordagens de verdade (não só ler sobre elas), o equivalente a
+> `transcrever_pagina()` seria:
+> ```python
+> import boto3
+> textract = boto3.client("textract", region_name="us-east-1")
+>
+> def transcrever_pagina_textract(imagem_bytes: bytes) -> str:
+>     resp = textract.detect_document_text(Document={"Bytes": imagem_bytes})
+>     linhas = [b["Text"] for b in resp["Blocks"] if b["BlockType"] == "LINE"]
+>     return "\n".join(linhas)
+> ```
+> **O material desta aula segue com Gemini como caminho principal** — isso
+> aqui é só pra quem quiser fazer a comparação de verdade no Exercício 1.3.
+
 Rode isso no CloudShell (`pip install --user pymupdf requests` primeiro) contra o seu PDF de teste.
 
 **✅ Checkpoint L₁:** o script imprime a transcrição de cada página? Salve o resultado — o Exercício 2.2 usa esse texto.
@@ -158,7 +179,7 @@ Rode isso no CloudShell (`pip install --user pymupdf requests` primeiro) contra 
 
 Responda no `entrega-grupo-aula04.md`:
 
-a) Cite 2 cenários onde OCR tradicional (Textract, Tesseract) ainda ganha do LLM de visão em custo, e 2 onde o LLM de visão ganha em qualidade.
+a) O Textract está confirmado disponível nesta conta (ver a alternativa acima) — rode as DUAS abordagens no mesmo PDF de teste e compare de verdade: transcreva com Textract e com Gemini, e cole os dois resultados lado a lado no `entrega-grupo-aula04.md`. Depois, cite 2 cenários onde o Textract ainda ganha do LLM de visão em custo/velocidade, e 2 onde o Gemini ganha em qualidade (ex.: tabelas, formatação irregular).
 b) O prompt do Exercício 1.2 pede pra "não resumir, não comentar". O que acontece com o pipeline de RAG se o modelo resumir a página em vez de transcrever? Por que isso é um problema pra retrieval?
 c) Estime o custo de transcrever os **200 catálogos de fornecedores da QC** (~15 páginas cada, em média) com o modelo que você usou. Confira se seu volume ainda cabe no free tier do Gemini (rate limit por minuto/dia) ou se passaria pro tier pago — use a [página de pricing do Gemini API](https://ai.google.dev/gemini-api/docs/pricing) pra estimar o custo além do free tier.
 
