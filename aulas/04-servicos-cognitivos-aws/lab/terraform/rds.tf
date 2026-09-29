@@ -27,8 +27,14 @@ resource "aws_db_instance" "rag" {
   username          = "ragadmin"
 
   # Senha gerada e guardada automaticamente no Secrets Manager — sem senha
-  # hardcoded, sem nós escolhendo/copiando nada manualmente.
-  manage_master_user_password = true
+  # hardcoded, sem nós escolhendo/copiando nada manualmente. O KMS key
+  # precisa ser explícito: sem isso, algumas combinações de provider/API
+  # mandam um KmsKeyId nulo no CreateDBInstance em vez de simplesmente
+  # omitir o campo, e a AWS rejeita com KMSKeyNotAccessibleFault (erro
+  # real visto num apply). "alias/aws/secretsmanager" é a mesma chave
+  # gerenciada pela AWS que seria usada por padrão de qualquer forma.
+  manage_master_user_password   = true
+  master_user_secret_kms_key_id = "alias/aws/secretsmanager"
 
   publicly_accessible = false
   skip_final_snapshot = true
