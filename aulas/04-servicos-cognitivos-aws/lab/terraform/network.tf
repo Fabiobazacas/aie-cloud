@@ -39,11 +39,13 @@ resource "aws_nat_gateway" "saida_gemini" {
 
 # Subnet nova, só pra Lambda — usa um bloco /24 bem afastado dos /20 que o
 # AWS Academy já aloca por padrão pras subnets default (normalmente até 6,
-# cobrindo só os primeiros ~96 endereços /24 do range /16), então o offset
-# 200 abaixo não deveria colidir com nada existente.
+# cobrindo só os primeiros ~96 endereços /24 do range /16). O offset é
+# sorteado (random_integer.subnet_offset, em main.tf) em vez de fixo, pra não
+# colidir com uma subnet órfã de um apply anterior que falhou antes de
+# terminar (ver Troubleshooting no guia-lab.md).
 resource "aws_subnet" "lambda_privada" {
   vpc_id            = data.aws_vpc.default.id
-  cidr_block        = cidrsubnet(data.aws_vpc.default.cidr_block, 8, 200)
+  cidr_block        = cidrsubnet(data.aws_vpc.default.cidr_block, 8, random_integer.subnet_offset.result)
   availability_zone = data.aws_subnet.publica_para_nat.availability_zone
   tags              = local.tags
 }

@@ -32,6 +32,19 @@ resource "random_string" "sufixo" {
   special = false
 }
 
+# Offset do bloco /24 da subnet dedicada da Lambda (ver network.tf). Sorteado
+# em vez de fixo: numa conta que já teve uma subnet órfã de um apply anterior
+# (ex.: um apply que falhou por espaço em disco antes de gravar o state — ver
+# guia-lab.md) ou que é compartilhada por mais de um grupo, um valor fixo
+# colide direto com o que já existe (InvalidSubnet.Conflict). Sorteando entre
+# 100 e 250 ficamos bem longe das ~6 subnets /20 que o Academy já cria por
+# padrão (endereços até ~172.31.95.x) e reduzimos a chance de colisão entre
+# execuções diferentes pra 1 em ~150.
+resource "random_integer" "subnet_offset" {
+  min = 100
+  max = 250
+}
+
 locals {
   tags = {
     aula         = "4"
