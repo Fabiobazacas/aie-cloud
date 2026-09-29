@@ -5,7 +5,7 @@
 Ao final desta aula, você será capaz de:
 
 - Transcrever um PDF (inclusive digitalizado/escaneado) usando um **LLM multimodal** (Google Gemini), em vez de OCR tradicional.
-- Gerar **embeddings** de texto (Gemini `text-embedding-004`) e entender trade-offs de chunking.
+- Gerar **embeddings** de texto (Gemini `gemini-embedding-001`) e entender trade-offs de chunking.
 - Provisionar e consultar um **banco vetorial** com **Amazon RDS PostgreSQL + pgvector**.
 - Construir um **endpoint de RAG** (Retrieval-Augmented Generation) numa **Lambda** por trás de API Gateway: recebe uma pergunta, busca o contexto relevante no banco vetorial e usa um LLM pra responder com base nesse contexto.
 - Entender as implicações de rodar Lambda dentro de uma VPC pra acessar RDS **e uma API externa** (endpoints AWS vs. NAT Gateway, custo, latência).

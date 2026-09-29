@@ -46,7 +46,14 @@ GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 # v1beta/models?key=$GEMINI_API_KEY"` lista o que está disponível/ativo
 # pra sua chave agora.
 MODEL_TEXTO = "gemini-flash-lite-latest"
-MODEL_EMBED = "text-embedding-004"
+# text-embedding-004 também aposentou (404 real: "not found ... or is not
+# supported for embedContent"). gemini-embedding-001 é o substituto — mas
+# por padrão devolve vetores maiores; outputDimensionality=768 no corpo do
+# request (ver gerar_embedding) pede explicitamente o tamanho que bate com
+# a coluna embedding VECTOR(768) já provisionada, sem precisar migrar o
+# schema. Confirmado com teste real: 768 valores exatos.
+MODEL_EMBED = "gemini-embedding-001"
+DIMENSAO_EMBEDDING = 768
 TAMANHO_CHUNK = 500
 SOBREPOSICAO_CHUNK = 50
 TOP_K = 5
@@ -113,7 +120,7 @@ def transcrever_pagina(imagem_b64: str) -> str:
 
 
 def gerar_embedding(texto: str) -> list[float]:
-    corpo = {"content": {"parts": [{"text": texto}]}}
+    corpo = {"content": {"parts": [{"text": texto}]}, "outputDimensionality": DIMENSAO_EMBEDDING}
     resp = _gemini_post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_EMBED}:embedContent", corpo
     )
