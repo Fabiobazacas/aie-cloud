@@ -11,9 +11,15 @@ Variável de ambiente esperada:
 import base64
 import os
 import sys
+from pathlib import Path
 
 import fitz  # PyMuPDF — ver guia-lab.md LAB 2 pra instalar
 import requests  # idem
+
+# Relativo ao arquivo, não ao diretório atual — assim funciona rodando de
+# lab/, de lab/scripts/, ou de onde for (já vimos essa exata confusão de
+# diretório acontecer com criar_tabela.py também).
+PDF_PADRAO = Path(__file__).resolve().parent.parent / "data" / "catalogo_qc.pdf"
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 MODEL_ID = "gemini-2.0-flash"  # confira o nome atual em ai.google.dev/gemini-api/docs/models
@@ -50,7 +56,7 @@ def transcrever_pdf(caminho_pdf: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    caminho = sys.argv[1] if len(sys.argv) > 1 else "../data/catalogo_qc.pdf"
+    caminho = sys.argv[1] if len(sys.argv) > 1 else str(PDF_PADRAO)
     textos = transcrever_pdf(caminho)
     for i, texto in enumerate(textos, 1):
         print(f"--- Página {i} ---\n{texto}\n")
