@@ -7,7 +7,8 @@ Código IaC completo pro pipeline de RAG da Quantum Commerce:
 - Rede dedicada: NAT Gateway + subnet privada pra Lambda alcançar o Gemini
   (API externa — não é um serviço AWS, então não dá pra usar VPC endpoint)
 - Lambda (Python 3.12) com PyMuPDF + psycopg2 + pgvector, atrás de uma API
-  Gateway HTTP API com 4 rotas: `/health`, `/transcrever`, `/indexar`, `/perguntar`
+  Gateway HTTP API com 6 rotas: `/health`, `/setup-db`, `/status`,
+  `/transcrever`, `/indexar`, `/perguntar`
 
 ## Restrições do Learner Lab que moldam este código
 
@@ -46,7 +47,7 @@ terraform destroy -auto-approve -var="gemini_api_key=$GEMINI_API_KEY"
 | [s3.tf](s3.tf) | Bucket de documentos (via CLI) + upload do `catalogo_qc.pdf` |
 | [network.tf](network.tf) | NAT Gateway + subnet dedicada + Security Groups |
 | [rds.tf](rds.tf) | RDS PostgreSQL 16 + subnet group |
-| [lambda.tf](lambda.tf) | Build da Lambda (deps manylinux) + API Gateway + 4 rotas |
+| [lambda.tf](lambda.tf) | Build da Lambda (deps manylinux) + API Gateway + 6 rotas |
 | [outputs.tf](outputs.tf) | `rag_docs_bucket`, `rds_endpoint`, `rds_secret_arn`, `lambda_function_name`, `api_gateway_url` |
 
 ## Outputs disponíveis

@@ -101,6 +101,21 @@ resource "aws_apigatewayv2_route" "health" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# RDS é privado (publicly_accessible = false) e só a Lambda está na VPC que
+# alcança essa subnet — por isso o schema (CREATE EXTENSION/TABLE/INDEX) e a
+# conferência de linhas rodam aqui, não via psql direto do CloudShell.
+resource "aws_apigatewayv2_route" "setup_db" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /setup-db"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "status" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /status"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "transcrever" {
   api_id    = aws_apigatewayv2_api.http_api.id
   route_key = "GET /transcrever"

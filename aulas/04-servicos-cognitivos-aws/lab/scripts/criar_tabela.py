@@ -1,10 +1,17 @@
-"""LAB 1 — cria a extensão pgvector e a tabela documentos_qc no RDS.
+"""LAB 1.1 — documenta a SQL que cria a extensão pgvector e a tabela
+documentos_qc no RDS (CREATE EXTENSION / TABLE / INDEX hnsw).
 
-ATENÇÃO: este script tem uma falha de segurança PROPOSITAL — ache-a antes
-de rodar contra um banco de verdade. Dica: procure por "Senha obtida" logo
-abaixo.
+NÃO RODE ESTE SCRIPT DIRETO DO CLOUDSHELL: o RDS é privado
+(publicly_accessible = false), numa subnet que só a Lambda alcança — uma
+conexão daqui trava em "Connection timed out". A mesma SQL roda de
+verdade dentro da rota `/setup-db` da Lambda (ver
+`lambda/lambda_function.py::rota_setup_db`) — é lá que o LAB 1.1 manda
+chamar. Este arquivo existe pra comparação: ele tem uma falha de segurança
+PROPOSITAL (uma linha de log que imprime a senha inteira — procure por
+"Senha obtida" abaixo) que `rota_setup_db` NÃO tem. Ache a diferença.
 
-Variáveis de ambiente esperadas (exporte antes de rodar — ver guia-lab.md):
+Variáveis de ambiente esperadas, se algum dia você rodar isto de dentro
+da VPC (ex.: via bastion/SSM):
     DB_HOST        — terraform output -raw rds_endpoint
     DB_SECRET_ARN  — terraform output -raw rds_secret_arn
 """

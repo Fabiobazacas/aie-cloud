@@ -87,7 +87,7 @@ Tempo: ~10-15 min (RDS é o gargalo). Enquanto espera, abra os arquivos
 | `s3.tf` | Bucket de documentos (via CLI — ver comentário no arquivo) + upload automático do `catalogo_qc.pdf` |
 | `network.tf` | NAT Gateway + subnet dedicada pra Lambda alcançar o Gemini (API externa) + Security Groups |
 | `rds.tf` | RDS PostgreSQL 16, senha via Secrets Manager (`manage_master_user_password`) |
-| `lambda.tf` | Build da Lambda (PyMuPDF + psycopg2 via wheels manylinux) + API Gateway HTTP API + 4 rotas |
+| `lambda.tf` | Build da Lambda (PyMuPDF + psycopg2 via wheels manylinux) + API Gateway HTTP API + 6 rotas |
 | `outputs.tf` | Todos os outputs usados pelos passos seguintes |
 
 Ao final, confira os outputs:
@@ -103,33 +103,33 @@ terraform output
 ## LAB 1.1 — Criar a extensão pgvector e a tabela
 
 pgvector não é habilitado pelo Terraform — é uma extensão do PostgreSQL,
-então precisa de SQL depois que a instância já está de pé.
+então precisa de SQL depois que a instância já está de pé. Essa SQL roda
+de **dentro da Lambda** (rota `/setup-db`), não direto do CloudShell: o
+RDS é privado de propósito (`publicly_accessible = false`, numa subnet
+que só a própria Lambda alcança — ver `network.tf`), então o CloudShell
+não tem rota nenhuma até ele. Tentar conectar direto (`psql`, um script
+Python local) sempre trava em `Connection timed out` — não é um bug
+transitório, é o desenho de segurança funcionando como deveria.
+
+> **Antes de continuar:** abra `scripts/criar_tabela.py` — ele documenta
+> a MESMA SQL que a rota `/setup-db` roda, mas tem uma falha de segurança
+> proposital (uma linha de log que imprime a senha inteira). Compare com
+> `rota_setup_db` em `lambda/lambda_function.py`: ache a diferença que
+> evita esse vazamento.
 
 ```bash
-cd ~/aie-cloud/aulas/04-servicos-cognitivos-aws/lab
-pip install psycopg2-binary boto3 -q $([ -z "$VIRTUAL_ENV" ] && echo --user)
-
-export DB_HOST=$(cd terraform && terraform output -raw rds_endpoint)
-export DB_SECRET_ARN=$(cd terraform && terraform output -raw rds_secret_arn)
-echo "RDS: $DB_HOST"
-
-python3 scripts/criar_tabela.py
+cd ~/aie-cloud/aulas/04-servicos-cognitivos-aws/lab/terraform
+curl "$(terraform output -raw api_gateway_url)/setup-db"
 ```
 
-> **Antes de rodar:** abra `scripts/criar_tabela.py` e leia com atenção —
-> tem uma falha de segurança proposital (uma linha de log que imprime a
-> senha inteira). Ache e conserte antes de rodar contra qualquer banco que
-> não seja este lab descartável.
-
-Confirme via `psql`:
+Deve devolver `{"status": "schema pronto"}`. Confirme via a própria API
+(sem `psql` — pelo mesmo motivo acima):
 
 ```bash
-segredo=$(aws secretsmanager get-secret-value --secret-id "$DB_SECRET_ARN" --query SecretString --output text)
-export PGPASSWORD=$(echo "$segredo" | python3 -c "import json,sys; print(json.load(sys.stdin)['password'])")
-psql -h "$DB_HOST" -U ragadmin -d ragdb -c "\d documentos_qc"
+curl "$(terraform output -raw api_gateway_url)/status"
 ```
 
-**✅ Checkpoint L₁.₁:** a tabela `documentos_qc` existe, com a coluna `embedding VECTOR(768)`?
+**✅ Checkpoint L₁.₁:** `/status` devolve `{"total_chunks": 0, "total_fontes": 0}` (a tabela existe e está vazia — ainda não indexamos nada)?
 
 ---
 
@@ -188,10 +188,10 @@ Rode o mesmo comando DE NOVO — repare que `chunks_indexados` vem **zero**
 na segunda vez: é o filtro de idempotência evitando reprocessar chunks já
 indexados.
 
-Confirme via `psql`:
+Confirme via `/status` (não `psql` — o RDS é privado, ver LAB 1.1):
 
 ```bash
-psql -h "$DB_HOST" -U ragadmin -d ragdb -c "SELECT COUNT(*) FROM documentos_qc;"
+curl -s "$API_URL/status" | python3 -m json.tool
 ```
 
 ### Revisão de segurança (pausa de 2 min)
@@ -260,7 +260,7 @@ aula — o RDS é o item mais caro por hora deste módulo.
 | `terraform apply` falha em `aws_db_instance.rag` com `InvalidParameterCombination: Cannot find version 16.4 for postgres` | A AWS aposenta minor versions do Postgres periodicamente; um `engine_version` fixo tipo `16.4` para de existir | `git pull` pra pegar a versão atual do `rds.tf` (`engine_version = "16"`, só o major — a RDS resolve pro minor disponível automaticamente) e reaplique |
 | Lambda retorna `500` com `"Gemini respondeu 403"` ou `401` | `GEMINI_API_KEY` errada ou não passada no `-var` do apply | Confira `echo $GEMINI_API_KEY` antes do apply; reaplique passando `-var="gemini_api_key=$GEMINI_API_KEY"` de novo (isso atualiza só a variável de ambiente da Lambda, é rápido) |
 | Lambda retorna `500` com erro de timeout/conexão ao chamar o Gemini | NAT Gateway ainda provisionando, ou security group da Lambda sem egress liberado | Confira `terraform state show aws_nat_gateway.saida_gemini` — o `State` precisa estar `available`; aguarde 1-2 min após o apply |
-| `psql` dá `timeout expired` | Rodando de fora da rede da VPC (isso é esperado — só a Lambda acessa o RDS diretamente); o comando do guia usa `psql` do CloudShell, que também não está na VPC | Use `psql` só pra conferência via um bastion, ou confie nos resultados via `curl` nas rotas da Lambda — o CloudShell não tem rota pra dentro da VPC por padrão |
+| `psql`/script Python local dá `Connection timed out` tentando falar com o RDS | Esperado: o RDS é privado (`publicly_accessible = false`) numa subnet que só a Lambda alcança; o CloudShell não tem rota pra dentro dessa VPC | Não tente conectar direto do CloudShell — use as rotas `/setup-db` (cria o schema) e `/status` (conta chunks) da própria API, que rodam de dentro da Lambda. `psql` direto só funcionaria com um bastion na VPC, que este lab não provisiona |
 | `terraform apply` falha criando a subnet com `InvalidSubnet.Conflict: The CIDR '172.31.X.0/24' conflicts with another subnet` | Quase sempre é uma subnet **órfã** de um apply anterior que não terminou (ex.: falhou depois de criar a rede mas antes de gravar o state, ou falhou no passo do RDS/Lambda e não chegou a gravar tudo). O offset do bloco `/24` é sorteado (`random_integer.subnet_offset`), então rodar de novo já tende a sortear outro valor e resolver sozinho | Primeiro só rode `terraform apply` de novo — o offset muda a cada plano novo. Se persistir, ache e apague o órfão: `aws ec2 describe-subnets --filters "Name=tag:projeto,Values=quantum-commerce"` (ou `Name=cidr-block,Values=172.31.X.0/24` com o CIDR do erro) — se o `terraform state list` não conhece esse `subnet-id`, é lixo de uma execução anterior: apague a subnet (e o NAT Gateway/EIP associados, se também estiverem órfãos — ver linha acima) pelo console ou `aws ec2 delete-subnet` |
 | `429 Too Many Requests` do Gemini | Rate limit do free tier estourado — provavelmente a chave está sendo usada por mais de um grupo | Confirme que cada grupo tem sua própria `GEMINI_API_KEY` |
 | `terraform destroy` trava no NAT Gateway | Normal — NAT Gateway demora alguns minutos a mais que os outros recursos pra deletar | Aguarde; não interrompa o comando |

@@ -52,7 +52,7 @@ não muda — só troca de onde vem o LLM (ver notas em cada exercício).
 |---------|-------------|
 | [lab/guia-lab.md](lab/guia-lab.md) | Passo a passo guiado em sala — LAB 1 a 4, do provisionamento ao endpoint de RAG |
 | [lab/terraform/](lab/terraform/) | Código IaC completo e pronto pra `terraform apply`: S3 + RDS/pgvector + rede (NAT Gateway) + Lambda + API Gateway |
-| [lab/lambda/lambda_function.py](lab/lambda/lambda_function.py) | As 4 rotas do pipeline: `/health`, `/transcrever`, `/indexar`, `/perguntar` |
+| [lab/lambda/lambda_function.py](lab/lambda/lambda_function.py) | As 6 rotas do pipeline: `/health`, `/setup-db`, `/status`, `/transcrever`, `/indexar`, `/perguntar` |
 | [lab/scripts/](lab/scripts/) | `criar_tabela.py` (com a falha de segurança proposital) e `transcrever_pdf.py` (versão local pra explorar antes de testar o endpoint) |
 | [lab/data/catalogo_qc.pdf](lab/data/catalogo_qc.pdf) | PDF de teste (política de troca fictícia da QC) já usado pelo Terraform |
 | [exercicios.md](exercicios.md) | Após o lab — exercício em 3 níveis, construindo sobre o lab guiado |

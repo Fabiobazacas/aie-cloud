@@ -19,6 +19,6 @@ output "lambda_function_name" {
 }
 
 output "api_gateway_url" {
-  description = "URL base da API (ex.: <url>/health, <url>/transcrever, <url>/indexar, <url>/perguntar)"
+  description = "URL base da API (ex.: <url>/health, <url>/setup-db, <url>/status, <url>/transcrever, <url>/indexar, <url>/perguntar)"
   value       = aws_apigatewayv2_api.http_api.api_endpoint
 }

@@ -20,8 +20,9 @@ agente da QC usa pra responder **com base no documento real**, citando a
 fonte — não "no que o modelo lembra de treino".
 
 **Faça o [lab/guia-lab.md](lab/guia-lab.md) primeiro.** Ele já sobe o
-pipeline inteiro — S3, RDS/pgvector, rede (NAT Gateway), Lambda com as 4
-rotas (`/health`, `/transcrever`, `/indexar`, `/perguntar`) — com um
+pipeline inteiro — S3, RDS/pgvector, rede (NAT Gateway), Lambda com as 6
+rotas (`/health`, `/setup-db`, `/status`, `/transcrever`, `/indexar`,
+`/perguntar`) — com um
 `terraform apply` só. Os exercícios abaixo **partem desse lab já no ar** e
 giram em torno de problemas que a QC teria de verdade com esse pipeline —
 não é pra reconstruir a infraestrutura do zero, é pra rodar, colocar
@@ -186,9 +187,10 @@ b) Abra `lab/terraform/network.tf` — por que a Lambda precisa de uma
    **subnet própria com rota pra um NAT Gateway**, e não basta colocar ela
    numa das subnets default da VPC? (Dica: pense em quem tem rota direta
    pra um Internet Gateway vs. quem precisa de NAT.)
-c) Rode `psql` (ver `lab/guia-lab.md`) e confirme quantas linhas existem em
-   `documentos_qc` depois do Exercício 2.2 abaixo — cole o resultado de
-   `SELECT COUNT(*) FROM documentos_qc;`.
+c) O RDS é privado — não dá pra rodar `psql` direto do CloudShell (ver
+   LAB 1.1 em `lab/guia-lab.md`). Depois do Exercício 2.2 abaixo, confirme
+   via `curl "$API_URL/status"` (rota que roda de dentro da Lambda) e cole
+   o `total_chunks` e `total_fontes` retornados.
 
 ### Exercício 2.2 — Ache o chunking que quebra a resposta certa
 
@@ -208,8 +210,8 @@ diferentes no mesmo chunk, o retrieval pode trazer o pedaço errado — e o
 agente responde 90 dias pra um cliente que comprou um eletrodoméstico.
 Isso é um bug de chunking virando uma resposta errada pra cliente.
 
-a) Rode `/indexar` contra `catalogo_qc.pdf` e confirme via `psql` que os
-   chunks entraram na tabela.
+a) Rode `/indexar` contra `catalogo_qc.pdf` e confirme via `curl
+   "$API_URL/status"` que os chunks entraram na tabela.
 
 b) Rode `/indexar` de novo, no MESMO documento — confirme que
    `chunks_indexados` vem **zero** na segunda vez (idempotência: veja a

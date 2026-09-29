@@ -2,6 +2,8 @@
 
 Rotas (API Gateway HTTP API, payload format 2.0):
     GET  /health
+    GET  /setup-db
+    GET  /status
     GET  /transcrever?bucket_key=<pdf no bucket de documentos>
     GET  /indexar?bucket_key=<mesmo pdf, já transcrito por /transcrever>
     POST /perguntar {"pergunta": "..."}
@@ -123,6 +125,41 @@ def rota_health(_params: dict) -> dict:
     return _response(200, {"status": "ok", "service": "qc-rag"})
 
 
+def rota_setup_db(_params: dict) -> dict:
+    # Mesma lógica de scripts/criar_tabela.py — mas rodando aqui, dentro da
+    # VPC, porque o RDS é privado de propósito (publicly_accessible=false)
+    # e o CloudShell não tem rota nenhuma pra essa subnet. Só a Lambda
+    # alcança o banco diretamente. Compare com criar_tabela.py: lá o
+    # segredo inteiro vai pro log (falha proposital); aqui ele nunca sai
+    # de _conectar_db().
+    conn = _conectar_db()
+    cur = conn.cursor()
+    cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS documentos_qc (
+            id SERIAL PRIMARY KEY,
+            fonte TEXT NOT NULL,
+            pagina INT NOT NULL,
+            chunk_texto TEXT NOT NULL,
+            embedding VECTOR(768)
+        );
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS documentos_qc_embedding_idx
+        ON documentos_qc USING hnsw (embedding vector_cosine_ops);
+    """)
+    conn.commit()
+    return _response(200, {"status": "schema pronto"})
+
+
+def rota_status(_params: dict) -> dict:
+    conn = _conectar_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*), COUNT(DISTINCT fonte) FROM documentos_qc")
+    total_chunks, total_fontes = cur.fetchone()
+    return _response(200, {"total_chunks": total_chunks, "total_fontes": total_fontes})
+
+
 def rota_transcrever(params: dict) -> dict:
     bucket_key = params.get("bucket_key")
     if not bucket_key:
@@ -216,6 +253,10 @@ def handler(event, context):
     try:
         if path.endswith("/health"):
             return rota_health(params)
+        if path.endswith("/setup-db"):
+            return rota_setup_db(params)
+        if path.endswith("/status"):
+            return rota_status(params)
         if path.endswith("/transcrever"):
             return rota_transcrever(params)
         if path.endswith("/indexar"):
