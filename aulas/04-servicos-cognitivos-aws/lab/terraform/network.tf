@@ -13,10 +13,25 @@ data "aws_vpc" "default" {
   default = true
 }
 
+# "default-for-az" é essencial aqui: sem esse filtro, um apply POSTERIOR
+# (depois que aws_subnet.lambda_privada, abaixo, já existe na conta) faz
+# esse data source se auto-incluir — ele filtra só por vpc-id, e nossa
+# própria subnet nova mora nessa mesma VPC. O resultado é o NAT Gateway
+# (que usa ids[0] como "a subnet pública") acabar caindo dentro da nossa
+# subnet PRIVADA por acidente — uma subnet sem rota nenhuma pra um
+# Internet Gateway, virando um buraco negro de rede pra tudo (confirmado
+# num apply real: Lambda travando 30s tentando alcançar até o Secrets
+# Manager). "default-for-az = true" restringe a busca às subnets que a
+# própria AWS criou junto com a VPC default — nunca inclui nada que a
+# gente cria depois.
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
+  }
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
   }
 }
 
