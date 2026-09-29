@@ -23,12 +23,14 @@ from __future__ import annotations
 import base64
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 
 import boto3
 import fitz  # PyMuPDF
 import psycopg2
+from botocore.config import Config
 from pgvector.psycopg2 import register_vector
 
 DOCS_BUCKET = os.environ["DOCS_BUCKET"]
@@ -43,7 +45,10 @@ SOBREPOSICAO_CHUNK = 50
 TOP_K = 5
 
 _s3 = boto3.client("s3")
-_sm = boto3.client("secretsmanager")
+# connect/read_timeout curtos e sem retry: se o Secrets Manager não for
+# alcançável daqui (NAT/DNS/SG), falha em ~10s com um erro claro em vez de
+# consumir os 30s inteiros do timeout da Lambda em silêncio.
+_sm = boto3.client("secretsmanager", config=Config(connect_timeout=10, read_timeout=10, retries={"max_attempts": 1}))
 _db_conn = None  # cache entre invocações num mesmo container "quente"
 
 
@@ -111,12 +116,23 @@ def _conectar_db():
     global _db_conn
     if _db_conn is not None and _db_conn.closed == 0:
         return _db_conn
+
+    # Logs por etapa: se a Lambda travar nos 30s do timeout, o CloudWatch
+    # mostra até onde chegou — Secrets Manager (NAT/DNS) ou o próprio RDS
+    # (security group/subnet) são causas bem diferentes de "timeout".
+    print(f"[_conectar_db] buscando segredo {DB_SECRET_ARN}")
+    t0 = time.time()
     segredo = json.loads(_sm.get_secret_value(SecretId=DB_SECRET_ARN)["SecretString"])
+    print(f"[_conectar_db] segredo obtido em {time.time() - t0:.1f}s — conectando em {DB_HOST}:5432")
+
+    t1 = time.time()
     _db_conn = psycopg2.connect(
         host=DB_HOST, dbname="ragdb",
         user=segredo["username"], password=segredo["password"],
         connect_timeout=10,
     )
+    print(f"[_conectar_db] conectado ao RDS em {time.time() - t1:.1f}s")
+
     register_vector(_db_conn)
     return _db_conn
 
