@@ -238,8 +238,14 @@ def rota_indexar(params: dict) -> dict:
             if cur.fetchone():
                 continue
             embedding = gerar_embedding(chunk_texto)
+            # ::vector explícito: o psycopg2 manda a lista Python como array
+            # (numeric[]), não como o tipo vector do pgvector — sem o cast,
+            # um ORDER BY embedding <=> %s adiante quebra por falta de
+            # operador (funciona sem isso só aqui, por coincidência: o
+            # Postgres converte array->vector sozinho quando o destino é uma
+            # coluna tipada, mas não em contexto de operador).
             cur.execute(
-                "INSERT INTO documentos_qc (fonte, pagina, chunk_texto, embedding) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO documentos_qc (fonte, pagina, chunk_texto, embedding) VALUES (%s, %s, %s, %s::vector)",
                 (bucket_key, num_pagina, chunk_texto, embedding),
             )
             chunks_indexados += 1
@@ -257,8 +263,10 @@ def rota_perguntar(body: dict) -> dict:
 
     conn = _conectar_db()
     cur = conn.cursor()
+    # ::vector explícito pelo mesmo motivo do INSERT em rota_indexar — sem
+    # ele, dá "operator does not exist: vector <=> numeric[]" (erro real).
     cur.execute(
-        "SELECT fonte, pagina, chunk_texto FROM documentos_qc ORDER BY embedding <=> %s LIMIT %s",
+        "SELECT fonte, pagina, chunk_texto FROM documentos_qc ORDER BY embedding <=> %s::vector LIMIT %s",
         (embedding_pergunta, TOP_K),
     )
     linhas = cur.fetchall()
