@@ -107,7 +107,7 @@ então precisa de SQL depois que a instância já está de pé.
 
 ```bash
 cd ~/aie-cloud/aulas/04-servicos-cognitivos-aws/lab
-pip install --user psycopg2-binary boto3 -q
+pip install psycopg2-binary boto3 -q $([ -z "$VIRTUAL_ENV" ] && echo --user)
 
 export DB_HOST=$(cd terraform && terraform output -raw rds_endpoint)
 export DB_SECRET_ARN=$(cd terraform && terraform output -raw rds_secret_arn)
@@ -142,7 +142,7 @@ depois testar o mesmo código já deployado na Lambda.
 
 ```bash
 cd ~/aie-cloud/aulas/04-servicos-cognitivos-aws/lab
-pip install --user pymupdf requests -q
+pip install pymupdf requests -q $([ -z "$VIRTUAL_ENV" ] && echo --user)
 
 cd scripts
 python3 transcrever_pdf.py ../data/catalogo_qc.pdf
@@ -255,6 +255,7 @@ aula — o RDS é o item mais caro por hora deste módulo.
 |----------|-------|---------|
 | `terraform apply` falha no `null_resource.lambda_build` com `Invalid cross-device link` seguido de `No space left on device` (arquivos do PyMuPDF) | Versão antiga do lab baixava as dependências da Lambda pra dentro do repo (`${path.module}/.build`), que fica no `$HOME` do CloudShell — só ~1GB de cota. O `pip` tenta mover do seu staging em `/tmp` pro `--target`, isso vira cópia entre filesystems diferentes e estoura a cota | `git pull` pra pegar a versão atual do `lambda.tf` (o build agora roda inteiro em `/tmp/qc-rag-lambda-build-...`, mesmo filesystem do staging do `pip`) e rode `terraform apply` de novo |
 | `terraform apply` falha no `null_resource.lambda_build` com outro erro de `pip` (não é o de cross-device/espaço acima) | CloudShell sem acesso à internet, ou `pip` desatualizado | `pip install --upgrade pip` e rode `terraform apply` de novo — o `null_resource` é idempotente |
+| `pip install --user ...` (LAB 1.1 ou LAB 2) falha com `Can not perform a '--user' install. User site-packages are not visible in this virtualenv` | A sessão do CloudShell já abre dentro de um virtualenv ativo (`$VIRTUAL_ENV` setado) — `--user` só existe pra instalar fora de venv, e é rejeitado dentro de um | Os comandos do guia já detectam isso sozinhos (`$([ -z "$VIRTUAL_ENV" ] && echo --user)`); se copiou um comando antigo, rode só `pip install psycopg2-binary boto3 -q` (ou `pymupdf requests`, conforme o LAB) sem `--user` |
 | `Failed to write state`/`errored.tfstate` (disco cheio) no meio do apply | Consequência do problema de espaço acima — quando o disco enche, o Terraform também não consegue gravar o próprio `terraform.tfstate` | Depois de atualizar o `lambda.tf` (linha acima), rode `df -h $HOME` pra confirmar que sobrou espaço; se o apply imprimiu um bloco JSON de "raw state", salve-o num arquivo e rode `terraform state push <arquivo>` antes de tentar de novo, pra não perder o rastro de recursos já criados (S3, NAT Gateway, EIP). **Depois, confira na conta se não sobrou NAT Gateway/EIP órfão** (cobra por hora mesmo sem uso): `aws ec2 describe-nat-gateways --filter "Name=tag:projeto,Values=quantum-commerce"` — se aparecer algo em estado diferente de `deleted`/`deleting` e o `terraform state list` não conhecer esse recurso, delete manualmente pelo console ou `aws ec2 delete-nat-gateway` |
 | `terraform apply` falha em `aws_db_instance.rag` com `InvalidParameterCombination: Cannot find version 16.4 for postgres` | A AWS aposenta minor versions do Postgres periodicamente; um `engine_version` fixo tipo `16.4` para de existir | `git pull` pra pegar a versão atual do `rds.tf` (`engine_version = "16"`, só o major — a RDS resolve pro minor disponível automaticamente) e reaplique |
 | Lambda retorna `500` com `"Gemini respondeu 403"` ou `401` | `GEMINI_API_KEY` errada ou não passada no `-var` do apply | Confira `echo $GEMINI_API_KEY` antes do apply; reaplique passando `-var="gemini_api_key=$GEMINI_API_KEY"` de novo (isso atualiza só a variável de ambiente da Lambda, é rápido) |

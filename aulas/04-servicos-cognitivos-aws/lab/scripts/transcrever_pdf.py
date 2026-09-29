@@ -12,8 +12,8 @@ import base64
 import os
 import sys
 
-import fitz  # PyMuPDF — pip install --user pymupdf
-import requests  # pip install --user requests
+import fitz  # PyMuPDF — ver guia-lab.md LAB 2 pra instalar
+import requests  # idem
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 MODEL_ID = "gemini-2.0-flash"  # confira o nome atual em ai.google.dev/gemini-api/docs/models
