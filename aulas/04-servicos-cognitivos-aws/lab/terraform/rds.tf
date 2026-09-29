@@ -11,10 +11,16 @@ resource "aws_db_subnet_group" "rag" {
 }
 
 resource "aws_db_instance" "rag" {
-  identifier     = "qc-rag-db-${random_string.sufixo.result}"
-  engine         = "postgres"
-  engine_version = "16.4"
-  instance_class = "db.t3.micro"
+  identifier = "qc-rag-db-${random_string.sufixo.result}"
+  engine     = "postgres"
+  # Só o major version: a AWS aposenta minors periodicamente (16.4 já não
+  # existe mais nesta conta/região no momento em que isso foi testado), e
+  # fixar um minor exato quebra o lab de novo no próximo semestre. Passando
+  # só "16", a RDS resolve pro minor mais recente disponível na hora do
+  # create — o provider da AWS já sabe não gerar diff nesse caso.
+  engine_version             = "16"
+  auto_minor_version_upgrade = true
+  instance_class             = "db.t3.micro"
 
   allocated_storage = 20
   db_name           = "ragdb"

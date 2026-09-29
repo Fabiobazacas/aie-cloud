@@ -4,6 +4,16 @@
 # pré-compilados pro Linux/x86_64 da Lambda (--platform manylinux2014_x86_64
 # --only-binary=:all:), mesmo rodando o apply no CloudShell — assim o
 # resultado é sempre compatível, não importa de onde o Terraform roda.
+#
+# O build vai pra /tmp, NUNCA pra dentro do repo: o $HOME do CloudShell é
+# persistente mas tem só ~1GB de cota, e o pip baixa/instala o PyMuPDF (que
+# sozinho passa de 20MB extraído) usando um diretório de staging dentro do
+# próprio /tmp antes de mover pro --target. Se o --target estivesse dentro
+# do repo (outro filesystem, montado por FUSE no CloudShell), esse "mover"
+# vira uma cópia (Errno 18: Invalid cross-device link) que multiplica o
+# espaço usado e estoura a cota do $HOME — inclusive impedindo o próprio
+# Terraform de gravar o terraform.tfstate. Usando /tmp pros dois lados, o
+# pip faz um rename de verdade (mesmo filesystem) e nada disso acontece.
 resource "null_resource" "lambda_build" {
   triggers = {
     requirements = filemd5("${path.module}/../lambda/requirements.txt")
@@ -13,25 +23,25 @@ resource "null_resource" "lambda_build" {
   provisioner "local-exec" {
     command = <<-EOT
       set -e
-      rm -rf "${path.module}/.build/lambda"
-      mkdir -p "${path.module}/.build/lambda"
+      rm -rf "/tmp/qc-rag-lambda-build-${random_string.sufixo.result}"
+      mkdir -p "/tmp/qc-rag-lambda-build-${random_string.sufixo.result}"
       pip install \
         --platform manylinux2014_x86_64 \
         --implementation cp \
         --python-version 3.12 \
         --only-binary=:all: \
-        --target "${path.module}/.build/lambda" \
+        --target "/tmp/qc-rag-lambda-build-${random_string.sufixo.result}" \
         -r "${path.module}/../lambda/requirements.txt" \
         -q
-      cp "${path.module}/../lambda/lambda_function.py" "${path.module}/.build/lambda/"
+      cp "${path.module}/../lambda/lambda_function.py" "/tmp/qc-rag-lambda-build-${random_string.sufixo.result}/"
     EOT
   }
 }
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/.build/lambda"
-  output_path = "${path.module}/.build/lambda.zip"
+  source_dir  = "/tmp/qc-rag-lambda-build-${random_string.sufixo.result}"
+  output_path = "/tmp/qc-rag-lambda-build-${random_string.sufixo.result}.zip"
   depends_on  = [null_resource.lambda_build]
 }
 
