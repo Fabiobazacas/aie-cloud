@@ -20,10 +20,11 @@ import os
 import time
 from pathlib import Path
 
-# "-latest" em vez de um nome versionado: o Google aposenta versões de
-# modelo periodicamente (gemini-2.0-flash já voltou 404 num teste real).
-# https://ai.google.dev/gemini-api/docs/models
-MODEL_ID_GEMINI = "gemini-flash-latest"
+# Histórico real desta aula: gemini-2.0-flash -> 404 (aposentado);
+# gemini-flash-latest -> 503 "high demand". gemini-flash-lite-latest
+# respondeu 200 num teste real. Se mudar de novo, confira:
+# curl "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY"
+MODEL_ID_GEMINI = "gemini-flash-lite-latest"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_ID_GEMINI}:generateContent"
 
 OPENAPI_PATH = Path(__file__).resolve().parent / "openapi-agente.json"

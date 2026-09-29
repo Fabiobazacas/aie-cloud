@@ -38,10 +38,14 @@ DB_HOST = os.environ["DB_HOST"]
 DB_SECRET_ARN = os.environ["DB_SECRET_ARN"]
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 
-# "-latest" em vez de um nome versionado (ex.: gemini-2.0-flash): o Google
-# aposenta versões de modelo periodicamente — um nome fixo já voltou 404
-# num teste real. O alias sempre aponta pro flash atual.
-MODEL_TEXTO = "gemini-flash-latest"
+# Histórico real desta aula: gemini-2.0-flash -> 404 (aposentado);
+# gemini-flash-latest e o gemini-3.8-flash indicado no erro -> 503 "high
+# demand" (o alias sem sufixo -lite concentra tráfego de quem não fixa
+# versão). gemini-flash-lite-latest respondeu 200 num teste real. Se
+# isso mudar de novo: `curl "https://generativelanguage.googleapis.com/
+# v1beta/models?key=$GEMINI_API_KEY"` lista o que está disponível/ativo
+# pra sua chave agora.
+MODEL_TEXTO = "gemini-flash-lite-latest"
 MODEL_EMBED = "text-embedding-004"
 TAMANHO_CHUNK = 500
 SOBREPOSICAO_CHUNK = 50
