@@ -20,9 +20,10 @@ import os
 from pathlib import Path
 
 # Confira o nome do modelo "flash" atual (free-tier) em
-# https://ai.google.dev/gemini-api/docs/models — a família muda de versão
-# com frequência; troque aqui se o nome abaixo não existir mais.
-MODEL_ID_GEMINI = "gemini-2.0-flash"
+# "-latest" em vez de um nome versionado: o Google aposenta versões de
+# modelo periodicamente (gemini-2.0-flash já voltou 404 num teste real).
+# https://ai.google.dev/gemini-api/docs/models
+MODEL_ID_GEMINI = "gemini-flash-latest"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_ID_GEMINI}:generateContent"
 
 OPENAPI_PATH = Path(__file__).resolve().parent / "openapi-agente.json"

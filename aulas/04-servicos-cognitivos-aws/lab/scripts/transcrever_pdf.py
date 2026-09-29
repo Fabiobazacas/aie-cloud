@@ -22,7 +22,7 @@ import requests  # idem
 PDF_PADRAO = Path(__file__).resolve().parent.parent / "data" / "catalogo_qc.pdf"
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
-MODEL_ID = "gemini-2.0-flash"  # confira o nome atual em ai.google.dev/gemini-api/docs/models
+MODEL_ID = "gemini-flash-latest"  # alias sempre atual — nome versionado (ex.: gemini-2.0-flash) já deu 404
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_ID}:generateContent"
 
 

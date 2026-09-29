@@ -38,7 +38,10 @@ DB_HOST = os.environ["DB_HOST"]
 DB_SECRET_ARN = os.environ["DB_SECRET_ARN"]
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 
-MODEL_TEXTO = "gemini-2.0-flash"
+# "-latest" em vez de um nome versionado (ex.: gemini-2.0-flash): o Google
+# aposenta versões de modelo periodicamente — um nome fixo já voltou 404
+# num teste real. O alias sempre aponta pro flash atual.
+MODEL_TEXTO = "gemini-flash-latest"
 MODEL_EMBED = "text-embedding-004"
 TAMANHO_CHUNK = 500
 SOBREPOSICAO_CHUNK = 50

@@ -173,7 +173,7 @@ curl -s "$API_URL/transcrever?bucket_key=catalogo_qc.pdf" | python3 -m json.tool
 > "acordar" (e ainda estabelecer a primeira conexão pela VPC). Chamadas
 > seguintes são mais rápidas.
 
-**Challenge:** o código usa `gemini-2.0-flash` (rápido e dentro do free
+**Challenge:** o código usa `gemini-flash-latest` (rápido e dentro do free
 tier). O que mudaria se você trocasse por um modelo Gemini Pro (mais caro,
 melhor em tabelas)?
 
