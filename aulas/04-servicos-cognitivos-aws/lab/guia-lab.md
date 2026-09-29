@@ -122,6 +122,12 @@ cd ~/aie-cloud/aulas/04-servicos-cognitivos-aws/lab/terraform
 curl "$(terraform output -raw api_gateway_url)/setup-db"
 ```
 
+> **Primeira chamada pode devolver `{"message":"Service Unavailable"}`.**
+> É a API Gateway, não a nossa Lambda (nosso código sempre responde
+> `{"erro": "..."}` quando falha) — normal na primeira invocação de uma
+> Lambda em VPC, enquanto a AWS ainda está anexando a interface de rede
+> (ENI) na subnet. Espere ~30s e rode o `curl` de novo.
+
 Deve devolver `{"status": "schema pronto"}`. Confirme via a própria API
 (sem `psql` — pelo mesmo motivo acima):
 
@@ -261,6 +267,7 @@ aula — o RDS é o item mais caro por hora deste módulo.
 | Lambda retorna `500` com `"Gemini respondeu 403"` ou `401` | `GEMINI_API_KEY` errada ou não passada no `-var` do apply | Confira `echo $GEMINI_API_KEY` antes do apply; reaplique passando `-var="gemini_api_key=$GEMINI_API_KEY"` de novo (isso atualiza só a variável de ambiente da Lambda, é rápido) |
 | Lambda retorna `500` com erro de timeout/conexão ao chamar o Gemini | NAT Gateway ainda provisionando, ou security group da Lambda sem egress liberado | Confira `terraform state show aws_nat_gateway.saida_gemini` — o `State` precisa estar `available`; aguarde 1-2 min após o apply |
 | `psql`/script Python local dá `Connection timed out` tentando falar com o RDS | Esperado: o RDS é privado (`publicly_accessible = false`) numa subnet que só a Lambda alcança; o CloudShell não tem rota pra dentro dessa VPC | Não tente conectar direto do CloudShell — use as rotas `/setup-db` (cria o schema) e `/status` (conta chunks) da própria API, que rodam de dentro da Lambda. `psql` direto só funcionaria com um bastion na VPC, que este lab não provisiona |
+| `curl` em qualquer rota devolve `{"message":"Service Unavailable"}` (nota: isso vem da API Gateway, não da nossa Lambda — o código sempre responde `{"erro": "..."}` quando falha) | Normal na primeira invocação de uma Lambda em VPC — a AWS ainda está anexando a ENI (interface de rede) na subnet; pode levar dezenas de segundos | Espere ~30-60s e repita o `curl`. Se persistir depois de 2-3 tentativas, confira os logs de verdade: `aws logs tail "/aws/lambda/$(terraform output -raw lambda_function_name)" --since 5m` |
 | `terraform apply` falha criando a subnet com `InvalidSubnet.Conflict: The CIDR '172.31.X.0/24' conflicts with another subnet` | Quase sempre é uma subnet **órfã** de um apply anterior que não terminou (ex.: falhou depois de criar a rede mas antes de gravar o state, ou falhou no passo do RDS/Lambda e não chegou a gravar tudo). O offset do bloco `/24` é sorteado (`random_integer.subnet_offset`), então rodar de novo já tende a sortear outro valor e resolver sozinho | Primeiro só rode `terraform apply` de novo — o offset muda a cada plano novo. Se persistir, ache e apague o órfão: `aws ec2 describe-subnets --filters "Name=tag:projeto,Values=quantum-commerce"` (ou `Name=cidr-block,Values=172.31.X.0/24` com o CIDR do erro) — se o `terraform state list` não conhece esse `subnet-id`, é lixo de uma execução anterior: apague a subnet (e o NAT Gateway/EIP associados, se também estiverem órfãos — ver linha acima) pelo console ou `aws ec2 delete-subnet` |
 | `429 Too Many Requests` do Gemini | Rate limit do free tier estourado — provavelmente a chave está sendo usada por mais de um grupo | Confirme que cada grupo tem sua própria `GEMINI_API_KEY` |
 | `terraform destroy` trava no NAT Gateway | Normal — NAT Gateway demora alguns minutos a mais que os outros recursos pra deletar | Aguarde; não interrompa o comando |
