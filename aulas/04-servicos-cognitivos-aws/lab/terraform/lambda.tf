@@ -14,10 +14,20 @@
 # espaço usado e estoura a cota do $HOME — inclusive impedindo o próprio
 # Terraform de gravar o terraform.tfstate. Usando /tmp pros dois lados, o
 # pip faz um rename de verdade (mesmo filesystem) e nada disso acontece.
+#
+# Só que /tmp é EFÊMERO entre sessões do CloudShell (limpa ao reconectar),
+# enquanto o terraform.tfstate (no $HOME, persistente) continua achando
+# que este null_resource já rodou — erro real visto: "archive_file" tenta
+# zipar um diretório que sumiu do /tmp numa sessão nova, mesmo sem nenhuma
+# mudança no código. always_run com timestamp() força reexecutar o build
+# em TODO apply, garantindo que /tmp esteja sempre consistente com o que
+# o Terraform espera — custa alguns segundos a mais por apply, mas nunca
+# quebra por causa disso.
 resource "null_resource" "lambda_build" {
   triggers = {
     requirements = filemd5("${path.module}/../lambda/requirements.txt")
     codigo       = filemd5("${path.module}/../lambda/lambda_function.py")
+    always_run   = timestamp()
   }
 
   provisioner "local-exec" {
