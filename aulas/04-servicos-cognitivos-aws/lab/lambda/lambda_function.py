@@ -63,6 +63,12 @@ def _response(status_code: int, body: dict) -> dict:
     }
 
 
+# Status transitórios do Gemini (sobrecarga do free tier, comum com a
+# turma inteira chamando junto). Só 1 retry curto: a Lambda tem 30s de
+# timeout no total, e essa função roda uma vez por página do PDF.
+STATUS_TRANSITORIOS = {429, 500, 502, 503, 504}
+
+
 def _gemini_post(url: str, corpo: dict) -> dict:
     dados = json.dumps(corpo).encode("utf-8")
     req = urllib.request.Request(
@@ -71,12 +77,16 @@ def _gemini_post(url: str, corpo: dict) -> dict:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as erro:
-        detalhe = erro.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Gemini respondeu {erro.code}: {detalhe}") from erro
+    for tentativa in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as erro:
+            detalhe = erro.read().decode("utf-8", errors="replace")
+            if erro.code in STATUS_TRANSITORIOS and tentativa == 0:
+                time.sleep(1)
+                continue
+            raise RuntimeError(f"Gemini respondeu {erro.code}: {detalhe}") from erro
 
 
 def pagina_para_base64_png(pagina, zoom: float = 2.0) -> str:

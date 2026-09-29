@@ -11,6 +11,7 @@ Variável de ambiente esperada:
 import base64
 import os
 import sys
+import time
 from pathlib import Path
 
 import fitz  # PyMuPDF — ver guia-lab.md LAB 2 pra instalar
@@ -31,6 +32,12 @@ def pagina_para_base64_png(pagina, zoom=2.0):
     return base64.b64encode(pix.tobytes("png")).decode("utf-8")
 
 
+# Status transitórios do Gemini — o free tier volta 503 (sobrecarga) com
+# alguma frequência, principalmente com a turma inteira chamando junto.
+STATUS_TRANSITORIOS = {429, 500, 502, 503, 504}
+TENTATIVAS = 4
+
+
 def transcrever_pagina(imagem_b64: str) -> str:
     corpo = {
         "contents": [{
@@ -41,9 +48,15 @@ def transcrever_pagina(imagem_b64: str) -> str:
         }],
         "generationConfig": {"maxOutputTokens": 2000},
     }
-    resp = requests.post(URL, params={"key": GEMINI_API_KEY}, json=corpo, timeout=30)
-    resp.raise_for_status()
-    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+    for tentativa in range(TENTATIVAS):
+        resp = requests.post(URL, params={"key": GEMINI_API_KEY}, json=corpo, timeout=30)
+        if resp.status_code in STATUS_TRANSITORIOS and tentativa < TENTATIVAS - 1:
+            espera = 2 ** tentativa  # 1s, 2s, 4s
+            print(f"Gemini respondeu {resp.status_code} (transitório) — tentando de novo em {espera}s...")
+            time.sleep(espera)
+            continue
+        resp.raise_for_status()
+        return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def transcrever_pdf(caminho_pdf: str) -> list[str]:

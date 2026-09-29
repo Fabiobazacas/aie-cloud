@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 
-# Confira o nome do modelo "flash" atual (free-tier) em
 # "-latest" em vez de um nome versionado: o Google aposenta versões de
 # modelo periodicamente (gemini-2.0-flash já voltou 404 num teste real).
 # https://ai.google.dev/gemini-api/docs/models
@@ -29,6 +29,11 @@ GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_ID
 OPENAPI_PATH = Path(__file__).resolve().parent / "openapi-agente.json"
 
 PROVEDORES = ("mock", "gemini")
+
+# Status transitórios do Gemini — o free tier volta 503 (sobrecarga) com
+# alguma frequência, principalmente com a turma inteira chamando junto.
+STATUS_TRANSITORIOS = {429, 500, 502, 503, 504}
+TENTATIVAS = 4
 
 
 def carregar_ferramentas_permitidas() -> list[dict]:
@@ -95,9 +100,13 @@ def _chamar_gemini(prompt: str, temperatura: float, max_tokens: int) -> str:
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": temperatura, "maxOutputTokens": max_tokens},
     }
-    resp = requests.post(GEMINI_URL, params={"key": chave}, json=corpo, timeout=30)
-    resp.raise_for_status()
-    return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+    for tentativa in range(TENTATIVAS):
+        resp = requests.post(GEMINI_URL, params={"key": chave}, json=corpo, timeout=30)
+        if resp.status_code in STATUS_TRANSITORIOS and tentativa < TENTATIVAS - 1:
+            time.sleep(2 ** tentativa)  # 1s, 2s, 4s
+            continue
+        resp.raise_for_status()
+        return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
 
 
 def classificar_nota(nota: dict, regras_aprovadas: list[str], provedor: str = "mock") -> dict:
