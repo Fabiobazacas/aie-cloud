@@ -1,0 +1,108 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Deva Contínuo — API de Continuidade",
+    "version": "1.0.0",
+    "description": "14 operações ao todo. O campo x-agente-permitido=true marca as 5 que o agente carrega na sua ferramenta (tool use). As outras 9 existem na API mas NÃO estão na especificação do agente — ele não sabe que elas existem."
+  },
+  "paths": {
+    "/notas": {
+      "get": {
+        "operationId": "listar_notas",
+        "summary": "Lista notas fiscais recebidas, opcionalmente filtradas por estado",
+        "x-agente-permitido": true
+      }
+    },
+    "/notas/{nota_id}": {
+      "get": {
+        "operationId": "detalhar_nota",
+        "summary": "Detalha uma nota fiscal específica",
+        "x-agente-permitido": true
+      }
+    },
+    "/notas/{nota_id}/processar": {
+      "post": {
+        "operationId": "processar_nota",
+        "summary": "Classifica a nota numa categoria final, com a regra aplicada (se houver)",
+        "x-agente-permitido": true
+      }
+    },
+    "/notas/{nota_id}/marcar-excecao": {
+      "post": {
+        "operationId": "marcar_excecao",
+        "summary": "Marca a nota como exceção quando nenhuma regra aprovada resolve o caso",
+        "x-agente-permitido": false
+      }
+    },
+    "/memoria/propor": {
+      "post": {
+        "operationId": "propor_memoria",
+        "summary": "Propõe uma regra de memória (vai para a fila de revisão, nunca some efeito imediato)",
+        "x-agente-permitido": true
+      }
+    },
+    "/memoria": {
+      "get": {
+        "operationId": "ler_memoria",
+        "summary": "Lê as regras já aprovadas (MEMORY.md)",
+        "x-agente-permitido": true
+      }
+    },
+    "/memoria/pendentes": {
+      "get": {
+        "operationId": "listar_pendentes",
+        "summary": "Lista propostas de memória aguardando revisão humana",
+        "x-agente-permitido": false
+      }
+    },
+    "/memoria/{proposta_id}/aprovar": {
+      "post": {
+        "operationId": "aprovar_memoria",
+        "summary": "Aprova uma proposta — exige X-Auditor; a API também rejeita se X-Auditor: deva",
+        "x-agente-permitido": false
+      }
+    },
+    "/memoria/{regra_id}/arquivar": {
+      "post": {
+        "operationId": "arquivar_memoria",
+        "summary": "Arquiva uma regra aprovada sem uso recente — ver Exercício 1 (Esquecimento)",
+        "x-agente-permitido": false
+      }
+    },
+    "/excecoes": {
+      "get": {
+        "operationId": "listar_excecoes",
+        "summary": "Lista notas em exceção ou duplicadas",
+        "x-agente-permitido": false
+      }
+    },
+    "/excecoes/{nota_id}/liberar": {
+      "post": {
+        "operationId": "liberar_excecao",
+        "summary": "Libera uma exceção — exige X-Auditor humano; nunca aceita por=deva",
+        "x-agente-permitido": false
+      }
+    },
+    "/fila/metricas": {
+      "get": {
+        "operationId": "metricas_fila",
+        "summary": "Contagens por estado — base para a taxa de devolução (Exercício 3)",
+        "x-agente-permitido": false
+      }
+    },
+    "/notas/semear": {
+      "post": {
+        "operationId": "semear_notas",
+        "summary": "Insere notas de exemplo (usado pelo gatilho/disparador.py --semear)",
+        "x-agente-permitido": false
+      }
+    },
+    "/rastreamento/{nota_id}": {
+      "get": {
+        "operationId": "rastrear_decisao",
+        "summary": "Mostra a decisão de uma nota e a regra aplicada — base para a Rastreabilidade (Exercício 2)",
+        "x-agente-permitido": false
+      }
+    }
+  }
+}
