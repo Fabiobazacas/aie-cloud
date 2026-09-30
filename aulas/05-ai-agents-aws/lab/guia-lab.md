@@ -8,7 +8,10 @@
 > Agents com Azure Foundry). A arquitetura de negócio é a mesma — memória
 > revisável, fila de exceções, fronteira de permissão em código — só o
 > gatilho por evento troca de Azure Event Grid pra S3+SQS quando você quiser
-> demonstrar isso rodando na nuvem de verdade.
+> demonstrar isso rodando na nuvem de verdade. Gatilho (`--nuvem`) e modelo
+> (`--provedor gemini`) são independentes um do outro — dá pra rodar os dois
+> "de verdade" ao mesmo tempo (ver seção "Combinando com Gemini" na
+> Atividade extra) pra uma demo 100% AWS + Gemini fim-a-fim.
 
 ---
 
@@ -235,6 +238,36 @@ python3 ../gatilho/disparador.py --observar --nuvem --fila-url "$(terraform outp
 
 Em outro terminal, suba um `.json` de nota pro bucket (`aws s3 cp ...` — ver
 o README do Terraform) e observe o gatilho disparar sozinho.
+
+### Combinando com Gemini — a demo "AWS + Gemini" completa
+
+`--nuvem` (gatilho) e `--provedor gemini` (decisão) são independentes entre
+si — `disparador.py` só entrega notas pra `dados/notas.json`, sem saber (nem
+importar) qual provedor vai decidir sobre elas depois. Isso significa que dá
+pra rodar as duas coisas "de verdade" ao mesmo tempo, sem nenhuma mudança de
+código:
+
+```bash
+# Terminal 3 — gatilho real via S3 + SQS (Terraform já aplicado acima)
+python3 ../gatilho/disparador.py --observar --nuvem \
+  --fila-url "$(terraform output -raw sqs_queue_url)"
+
+# Terminal 4 — decisão real via Gemini a cada nota que a fila entregar
+export GEMINI_API_KEY="sua-chave-aqui"   # aistudio.google.com/apikey, uma por grupo
+python3 ../gatilho/ciclo_do_agente.py --uma-volta --provedor gemini
+```
+
+Com isso, o caminho fim-a-fim vira: você sobe um `.json` pro bucket S3 → o
+S3 Event Notification dispara a SQS → `disparador.py --nuvem` consome a fila
+e grava a nota em `dados/notas.json` → `ciclo_do_agente.py --provedor gemini`
+classifica/decide chamando a API do Gemini de verdade (sem depender do
+Bedrock, que essa conta do Academy já confirmamos que nega
+`bedrock:ListFoundationModels` por falta de policy).
+
+**Custo**: mesmo custo da Atividade extra isolada (centavos, NAT/SQS/S3) — o
+Gemini free tier não cobra. **Cuidado com o rate limit**: se vários grupos
+testarem essa demo ao mesmo tempo com a mesma `GEMINI_API_KEY`, o 429 do
+free tier aparece rápido — cada grupo usa a própria chave.
 
 ---
 
