@@ -193,3 +193,18 @@ verdade, nada nesta arquitetura te impede de adicionar um provedor
 `"bedrock"` de volta em `cliente_llm.py` (o padrão de `_chamar_gemini` é
 fácil de replicar com `boto3` — ver histórico do arquivo ou o padrão usado
 nas Aulas 3/4) — mas isso é opcional, não é o caminho padrão deste material.
+
+**Sobre o Bedrock AgentCore (Runtime/Memory/Gateway/Identity)**: também
+testamos, numa sessão real do Academy, se o bloqueio de Bedrock é só na
+invocação de modelo ou no serviço inteiro. Não é só no modelo —
+`aws bedrock-agentcore-control list-agent-runtimes`,
+`list-memories` e `list-gateways` devolvem `AccessDeniedException` na
+mesma conta, mesmo sendo chamadas de **controle** (listar recursos, não
+invocar nenhum modelo). Ou seja: o Academy bloqueia o namespace
+`bedrock-agentcore:*` inteiro, não só `bedrock:InvokeModel`. Isso descarta
+o AgentCore (e o Strands Agents rodando *dentro* dele) como opção nesta
+conta — por isso este lab implementa memória revisável, fila de exceções
+e fronteira de permissão à mão (FastAPI + arquivos), em vez de usar
+`AgentCore Memory`/`AgentCore Identity` gerenciados. Se sua conta do
+Academy for uma exceção que libera Bedrock, provavelmente libera
+AgentCore também — vale testar os mesmos três comandos antes de assumir.
