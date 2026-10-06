@@ -105,6 +105,17 @@ Uma tabela de estimativa mensal (pode ser calculada manualmente a partir dos pre
 ### 2. `tools-spec.json` — as 5 tools de referência
 
 > **Não é preciso Bedrock, AgentCore ou qualquer agente rodando de verdade.** Esta trilha não teve uma aula aprofundada sobre agentes em cloud, e isso é esperado — orquestração de agente é tema de outra disciplina do MBA. Aqui, "tool" é só a forma de descrever um serviço AWS que **um agente poderia chamar**: nome, quando usar, schema de entrada, um exemplo de pergunta que dispararia. É documento, não infraestrutura.
+>
+> **"Tool" é apenas uma API comum, descrita de um jeito específico — nada além disso.** Toda tool que vocês já construíram na Aula 7 (a rota `/process` da Lambda do Chunker, o `POST /rag/query`, etc.) **já é** uma tool, no sentido estrito: um endpoint HTTP com entrada e saída definidas. A única diferença entre "API" e "tool" é a camada de descrição em cima:
+>
+> | Pergunta que a descrição responde | Onde isso já existe hoje |
+> |---|---|
+> | Qual é o endpoint? | A URL do API Gateway + rota da Lambda (já existe desde a Aula 7) |
+> | O que ele faz? | A docstring da função, ou o `README.md` do exercício |
+> | Quais parâmetros aceita? | O corpo do `POST` que vocês já montam no `curl` |
+> | Quando alguém (ou um agente) deveria chamá-lo? | A única pergunta nova — é o `description` do JSON Schema, escrito em linguagem natural |
+>
+> Ou seja: pra virar uma "tool", uma API só precisa ganhar uma descrição em linguagem natural de **quando usá-la**, pensada do ponto de vista de quem decide chamar (hoje, um humano rodando `curl`; amanhã, um LLM decidindo sozinho). Não tem SDK, protocolo ou infraestrutura nova envolvida.
 
 A arquitetura da QC se apoia em 5 capacidades, mapeadas direto dos exercícios da Aula 7:
 
