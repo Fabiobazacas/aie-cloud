@@ -62,7 +62,7 @@ Peso maior porque é aqui que mora o raciocínio arquitetural — o que este mom
 
 ### Critério B — Prova de conceito funcionando (10 pts)
 
-Reduzido de propósito: só precisa provar que **uma fatia real** do sistema roda, não o sistema inteiro.
+Escopo intencionalmente pontual: o objetivo é ancorar a arquitetura proposta em algo real, não demonstrar o sistema inteiro em produção.
 
 | Pontos | Descrição |
 |---|---|
@@ -71,7 +71,7 @@ Reduzido de propósito: só precisa provar que **uma fatia real** do sistema rod
 | 3-5 | Implementação parcial, não dá pra confirmar que funciona |
 | 0-2 | Nenhuma tool implementada |
 
-### Critério C — Análise de custo (FinOps light) (10 pts)
+### Critério C — Análise de custo (FinOps essencial) (10 pts)
 
 | Pontos | Descrição |
 |---|---|

@@ -16,21 +16,21 @@
 |---|---|---|
 | Trabalho 1 — Aula 7 | 15% | Primeira entrega prática feita durante a Aula 7 (exercícios AWS/Gemini) |
 | Trabalho 2 — Aula 7 | 15% | Segunda entrega prática feita durante a Aula 7 |
-| **Trabalho Final (esta pasta)** | **70%** | Projeto integrado Quantum Commerce, versão AWS, formato leve |
+| **Trabalho Final (esta pasta)** | **70%** | Projeto integrado Quantum Commerce, versão AWS, com foco em arquitetura e decisão técnica |
 | **Total** | **100%** | |
 
 > Os critérios do Trabalho 1 e 2 estão na [rubrica.md](rubrica.md). Se a divisão real dos dois trabalhos da Aula 7 foi diferente da descrita ali, ajuste os critérios — o que importa é fechar 30% com o que já foi de fato entregue, sem reabrir trabalho para o aluno.
 
 ---
 
-## Por que este trabalho é "light"
+## O foco deste trabalho: arquitetura, não deploy complexo
 
-O desenho original do projeto final (Azure) pedia um ZIP com 9 artefatos obrigatórios e uma arquitetura completa provisionada via Terraform (banco relacional + NoSQL + busca vetorial + 5 rotas de API + endpoint de ML). Para a trilha AWS isso não se sustenta por dois motivos:
+O desenho original do projeto final (Azure) pedia um ZIP com 9 artefatos obrigatórios e uma arquitetura completa provisionada via Terraform (banco relacional + NoSQL + busca vetorial + 5 rotas de API + endpoint de ML). Para a trilha AWS, o foco muda de propósito:
 
 1. **As aulas 1, 2 e 5 nunca foram convertidas para AWS** — não existe uma base ensinada e testada em aula para esses serviços nesta trilha.
-2. **O objetivo pedagógico deste momento do curso é raciocínio arquitetural, não operação de infraestrutura.** A Aula 7 já provou que o grupo sabe rodar Lambda + API Gateway + S3 + Gemini. O trabalho final não precisa reprovar isso — precisa testar se o grupo sabe **desenhar e justificar** uma arquitetura maior a partir disso.
+2. **O objetivo pedagógico deste momento do curso é raciocínio arquitetural, não operação de infraestrutura.** A Aula 7 já provou que o grupo sabe rodar Lambda + API Gateway + S3 + Gemini. O trabalho final não precisa repetir essa prova — precisa testar se o grupo sabe **desenhar e justificar** uma arquitetura maior a partir disso.
 
-Por isso, o trabalho final pede **um documento de arquitetura e decisão** (peso maior) + **uma prova de conceito pequena** (peso menor), em vez de um sistema inteiro funcionando.
+Por isso, o trabalho final pede **um documento de arquitetura e decisão** (peso maior, é o que de fato está sendo avaliado) + **uma prova de conceito pontual** (peso menor, só para ancorar o desenho em algo real) — em vez de exigir um deploy completo e complexo de toda a Quantum Commerce.
 
 ---
 
@@ -95,7 +95,7 @@ Ferramentas aceitas pro diagrama: Excalidraw, draw.io, Mermaid, foto de quadro b
 #### 3 decisões técnicas
 Formato ADR curto (decisão → contexto → alternativas → trade-off). Exemplos de decisões que valem a pena documentar: *por que Lambda e não ECS/Fargate*, *por que RDS+pgvector e não um serviço de busca vetorial gerenciado*, *por que Gemini direto e não um catálogo de modelos gerenciado (Bedrock)* — esta última em particular conecta direto com o que a Aula 7 já discutiu sobre a conta do AWS Academy.
 
-#### FinOps light
+#### FinOps essencial
 Uma tabela de estimativa mensal (pode ser calculada manualmente a partir dos preços unitários já vistos na Aula 7 — Lambda, NAT Gateway, RDS, DynamoDB) + 2 propostas de otimização, um parágrafo cada. Não é exigido export formal da AWS Pricing Calculator, mas é um diferencial se o grupo quiser fazer.
 
 #### Reflexão estratégica (curta)
