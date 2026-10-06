@@ -104,6 +104,8 @@ Uma tabela de estimativa mensal (pode ser calculada manualmente a partir dos pre
 
 ### 2. `tools-spec.json` — as 5 tools de referência
 
+> **Não é preciso Bedrock, AgentCore ou qualquer agente rodando de verdade.** Esta trilha não teve uma aula aprofundada sobre agentes em cloud, e isso é esperado — orquestração de agente é tema de outra disciplina do MBA. Aqui, "tool" é só a forma de descrever um serviço AWS que **um agente poderia chamar**: nome, quando usar, schema de entrada, um exemplo de pergunta que dispararia. É documento, não infraestrutura.
+
 A arquitetura da QC se apoia em 5 capacidades, mapeadas direto dos exercícios da Aula 7:
 
 | Tool | Deriva de | O que faz |

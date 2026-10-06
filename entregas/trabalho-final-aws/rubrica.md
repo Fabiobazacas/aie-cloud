@@ -84,6 +84,8 @@ Reduzido de propósito: só precisa provar que **uma fatia real** do sistema rod
 
 Segundo maior peso — é a outra metade do raciocínio que o trabalho quer testar: cada peça da arquitetura existe para alguma razão ligada ao agente, não só "porque dá pra fazer".
 
+> **Isso é avaliado só pelo `tools-spec.json` e pelo texto de `projeto.md` — não exige Bedrock Agents, AgentCore ou qualquer orquestração de agente rodando de verdade.** Esta trilha não teve uma aula aprofundada sobre agentes em cloud nem acesso ao Bedrock, e o critério não pressupõe isso. O que se avalia é se o grupo sabe projetar um serviço AWS **como uma ferramenta que um agente (construído em outra disciplina do MBA) poderia chamar** — nome, descrição de quando usar, schema de entrada e um exemplo de pergunta que dispararia a tool. É raciocínio de design de API, não implementação de agente.
+
 | Pontos | Descrição |
 |---|---|
 | 17-20 | Cada uma das 5 tools tem descrição clara de quando o agente a usaria, com exemplo de conversa/consulta que a dispararia |
