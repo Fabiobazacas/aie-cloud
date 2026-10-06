@@ -21,7 +21,9 @@ Cada aula contribui com um bloco do projeto integrado. Esses blocos são entregu
 | 3 | Implantar microserviços/funções do backend (Function HTTP, container) |
 | 4 | Integrar capacidades cognitivas (busca por imagem, sentimento de reviews, voz) |
 | 5 | Construir pipeline de MLOps para o modelo de recomendação |
-| 6 | Análise FinOps + trabalho assistido no projeto integrado final (entrega ZIP 1 semana depois, 50% da nota — **sem apresentação oral**) |
+| 6 | Análise FinOps + trabalho assistido no projeto integrado final (entrega ZIP 1 semana depois — **sem apresentação oral**) |
+
+> **Trilha AWS desta turma:** as aulas 1, 2 e 5 acima descrevem o desenho original (Azure) e nunca ganharam um equivalente AWS — ver [`entregas/DIVERGENCIA-TRILHA-AWS.md`](../entregas/DIVERGENCIA-TRILHA-AWS.md). Na prática, quem seguiu AWS teve o trabalho prático real na **Aula 7** (exercícios de pipeline serverless + Gemini), que junto com o trabalho final substitui as entregas intermediárias — ver [Avaliação](#avaliação) abaixo.
 
 ---
 
@@ -33,7 +35,9 @@ Cada aula contribui com um bloco do projeto integrado. Esses blocos são entregu
 
 ## Avaliação
 
-A nota da disciplina vem **inteiramente** deste projeto integrado em grupo, distribuída assim:
+A nota da disciplina vem **inteiramente** deste projeto integrado em grupo. A composição depende da trilha seguida:
+
+**Trilha Azure (desenho original):**
 
 | Componente | Peso |
 |------------|------|
@@ -41,7 +45,19 @@ A nota da disciplina vem **inteiramente** deste projeto integrado em grupo, dist
 | Projeto integrado final (entrega 1 semana após a Aula 6) | 50% |
 | **Total** | **100%** |
 
-Não há prova individual. Rubrica completa em [entregas/rubrica.md](../entregas/rubrica.md).
+Rubrica completa em [entregas/rubrica.md](../entregas/rubrica.md).
+
+**Trilha AWS (esta turma):** como as entregas intermediárias não foram cobradas de forma consistente durante a transição Azure→AWS, a nota vem de:
+
+| Componente | Peso |
+|------------|------|
+| Dois trabalhos práticos da Aula 7 | 30% |
+| Trabalho Final AWS (entrega 1 semana após a Aula 6) | 70% |
+| **Total** | **100%** |
+
+Instruções e rubrica completas em [entregas/trabalho-final-aws/](../entregas/trabalho-final-aws/).
+
+Não há prova individual em nenhuma das duas trilhas.
 
 ---
 
