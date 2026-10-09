@@ -6,16 +6,16 @@ Esta rubrica substitui, para a trilha AWS, a seção "Rubrica do Projeto Integra
 
 | Componente | Pontos | Peso |
 |---|---|---|
-| Trabalho 1 — Aula 7 | 15 | 15% |
-| Trabalho 2 — Aula 7 | 15 | 15% |
+| Trabalho 1 | 15 | 15% |
+| Trabalho 2 | 15 | 15% |
 | Trabalho Final (esta pasta) | 70 | 70% |
 | **Total** | **100** | **100%** |
 
-> Ajuste os critérios do Trabalho 1/2 abaixo se a divisão real dos dois trabalhos da Aula 7 cobriu outros exercícios ou outro recorte — o objetivo é fechar os 30% com o que já foi entregue, não redefinir o que já foi feito.
+> Ajuste os critérios do Trabalho 1/2 abaixo se a divisão real dos dois trabalhos cobriu outros exercícios ou outro recorte — o objetivo é fechar os 30% com o que já foi entregue, não redefinir o que já foi feito.
 
 ---
 
-## Parte 1 — Trabalhos da Aula 7 (30 pts)
+## Parte 1 — Trabalhos práticos já entregues (30 pts)
 
 Cada trabalho vale **15 pontos**.
 
@@ -62,7 +62,7 @@ Peso maior porque é aqui que mora o raciocínio arquitetural — o que este mom
 
 ### Critério B — As 5 tools funcionando (10 pts)
 
-As 5 tools são reaproveitadas dos stacks das Aulas 3 e 7 (não é implementação nova), então o padrão é as 5 rodando. Uma tool que não rodou por limitação externa documentada (cota do Hugging Face, rate limit do Gemini) e tem a tentativa registrada **não é contada como ausente**.
+As 5 tools são reaproveitadas dos stacks da Aula 3 e dos trabalhos práticos (não é implementação nova), então o padrão é as 5 rodando. Uma tool que não rodou por limitação externa documentada (cota do Hugging Face, rate limit do Gemini) e tem a tentativa registrada **não é contada como ausente**.
 
 | Pontos | Descrição |
 |---|---|

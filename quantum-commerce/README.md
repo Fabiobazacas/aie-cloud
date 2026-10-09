@@ -23,7 +23,7 @@ Cada aula contribui com um bloco do projeto integrado. Esses blocos são entregu
 | 5 | Construir pipeline de MLOps para o modelo de recomendação |
 | 6 | Análise FinOps + trabalho assistido no projeto integrado final (entrega ZIP 1 semana depois — **sem apresentação oral**) |
 
-> **Trilha AWS desta turma:** as aulas 1, 2 e 5 acima descrevem o desenho original (Azure) e nunca ganharam um equivalente AWS — ver [`entregas/DIVERGENCIA-TRILHA-AWS.md`](../entregas/DIVERGENCIA-TRILHA-AWS.md). Na prática, quem seguiu AWS teve o trabalho prático real na **Aula 7** (exercícios de pipeline serverless + Gemini), que junto com o trabalho final substitui as entregas intermediárias — ver [Avaliação](#avaliação) abaixo.
+> **Trilha AWS desta turma:** as aulas 1, 2 e 5 acima descrevem o desenho original (Azure) e nunca ganharam um equivalente AWS — ver [`entregas/DIVERGENCIA-TRILHA-AWS.md`](../entregas/DIVERGENCIA-TRILHA-AWS.md). Na prática, quem seguiu AWS teve o trabalho prático real em dois trabalhos entregues em aula (exercícios de pipeline serverless + Gemini), que junto com o trabalho final substituem as entregas intermediárias — ver [Avaliação](#avaliação) abaixo.
 
 ---
 
@@ -51,7 +51,7 @@ Rubrica completa em [entregas/rubrica.md](../entregas/rubrica.md).
 
 | Componente | Peso |
 |------------|------|
-| Dois trabalhos práticos da Aula 7 | 30% |
+| Dois trabalhos práticos já entregues em aula | 30% |
 | Trabalho Final AWS (entrega 1 semana após a Aula 6) | 70% |
 | **Total** | **100%** |
 

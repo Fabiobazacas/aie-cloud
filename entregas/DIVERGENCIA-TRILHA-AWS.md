@@ -3,8 +3,8 @@
 **Status:** a linha "Projeto Final" da tabela abaixo foi resolvida —
 ver [`entregas/trabalho-final-aws/`](trabalho-final-aws/) (INSTRUCOES.md +
 rubrica.md), que substitui `projeto-final/` para quem seguiu a trilha AWS.
-A nota final da trilha AWS passou a ser **30% Aula 7 (dois trabalhos práticos
-já entregues) + 70% Trabalho Final AWS**, em vez dos 50%/50% originais —
+A nota final da trilha AWS passou a ser **30% trabalhos práticos (dois já
+entregues em aula) + 70% Trabalho Final AWS**, em vez dos 50%/50% originais —
 decisão tomada porque as entregas intermediárias das Aulas 1-5 não foram
 cobradas de forma consistente durante a transição para AWS. As linhas 1, 2,
 5 e 6 da tabela (aulas sem conteúdo AWS) continuam como pendência em aberto,
