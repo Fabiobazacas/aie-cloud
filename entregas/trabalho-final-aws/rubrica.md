@@ -60,16 +60,16 @@ Peso maior porque é aqui que mora o raciocínio arquitetural — o que este mom
 | 7-13 | Arquitetura incompleta ou com escolhas pouco justificadas |
 | 0-6 | Arquitetura superficial ou desconectada do case QC |
 
-### Critério B — Prova de conceito funcionando (10 pts)
+### Critério B — As 5 tools funcionando (10 pts)
 
-Escopo intencionalmente pontual: o objetivo é ancorar a arquitetura proposta em algo real, não demonstrar o sistema inteiro em produção.
+As 5 tools são reaproveitadas dos stacks das Aulas 3 e 7 (não é implementação nova), então o padrão é as 5 rodando. Uma tool que não rodou por limitação externa documentada (cota do Hugging Face, rate limit do Gemini) e tem a tentativa registrada **não é contada como ausente**.
 
 | Pontos | Descrição |
 |---|---|
-| 9-10 | Pelo menos 1 tool rodando de verdade, com evidência de chamada real e Terraform aplicável |
-| 6-8 | Tool roda com pequenos ajustes ou falta parte da evidência |
-| 3-5 | Implementação parcial, não dá pra confirmar que funciona |
-| 0-2 | Nenhuma tool implementada |
+| 9-10 | As 5 tools respondem a uma chamada real, com evidência (comando + saída) para cada uma |
+| 6-8 | 4 de 5 tools funcionando com evidência; a que falta tem limitação documentada ou pequeno ajuste pendente |
+| 3-5 | 2-3 de 5 tools funcionando, ou evidência incompleta nas demais |
+| 0-2 | 0-1 tool funcionando, sem evidência de tentativa nas demais |
 
 ### Critério C — Análise de custo (FinOps essencial) (10 pts)
 

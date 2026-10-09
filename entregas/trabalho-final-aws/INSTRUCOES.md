@@ -30,7 +30,11 @@ O desenho original do projeto final (Azure) pedia um ZIP com 9 artefatos obrigat
 1. **As aulas 1, 2 e 5 nunca foram convertidas para AWS** — não existe uma base ensinada e testada em aula para esses serviços nesta trilha.
 2. **O objetivo pedagógico deste momento do curso é raciocínio arquitetural, não operação de infraestrutura.** A Aula 7 já provou que o grupo sabe rodar Lambda + API Gateway + S3 + Gemini. O trabalho final não precisa repetir essa prova — precisa testar se o grupo sabe **desenhar e justificar** uma arquitetura maior a partir disso.
 
-Por isso, o trabalho final pede **um documento de arquitetura e decisão** (peso maior, é o que de fato está sendo avaliado) + **uma prova de conceito pontual** (peso menor, só para ancorar o desenho em algo real) — em vez de exigir um deploy completo e complexo de toda a Quantum Commerce.
+Por isso, o trabalho final pede **um documento de arquitetura e decisão** (peso maior, é o que de fato está sendo avaliado) + **as 5 funcionalidades de referência rodando, reaproveitadas da Aula 3 e da Aula 7** (peso menor, só para ancorar o desenho em algo real) — em vez de exigir infraestrutura nova e complexa provisionada do zero para toda a Quantum Commerce.
+
+> **Isso não é implementação nova.** 4 das 5 tools (RAG, NER, Call Center Analytics, Campanha de Marketing) já rodam hoje atrás de **um único API Gateway**, no mesmo stack Terraform que o grupo construiu na Aula 7 — a integração entre elas já existe. A 5ª (`buscar_produtos`) vem de um stack separado, da Aula 3. "Reaproveitar" aqui significa, literalmente, rodar `terraform apply` de novo nesses dois stacks e confirmar que ainda respondem — não escrever nada do zero.
+>
+> **Reprovisionem com alguns dias de antecedência, não nos últimos 2 dias.** O ambiente foi destruído ao fim da Aula 7 (regra de ouro de custo), então os grupos vão reprovisionar do zero. Se todo mundo deixar pra última hora, o grupo pode esbarrar nos mesmos limites já conhecidos do material da Aula 7 — rate limit do Gemini por chave compartilhada, cota diária do ZeroGPU no Hugging Face (usada pela tool de Campanha). Esses limites se resolvem com tempo, não com pressa.
 
 ---
 
@@ -40,7 +44,7 @@ Consolidação do que o grupo aprendeu (principalmente na Aula 7) em um projeto 
 
 1. **Arquitetura AWS proposta** para os principais domínios da QC (catálogo, busca/RAG, extração de dados, atendimento, marketing)
 2. **Decisões técnicas justificadas** (por que cada serviço, não só qual serviço)
-3. **Uma prova de conceito funcionando** — pelo menos 1 das tools de referência, rodando de verdade
+3. **As 5 tools de referência rodando**, reaproveitadas das Aulas 3 e 7
 4. **Análise de custo** (estimativa + onde cortar)
 5. **Reflexão estratégica curta** — próximos passos e lições aprendidas
 
@@ -55,9 +59,9 @@ trabalho-final-aws-grupo-NN/
 ├── projeto.md              # ⭐ documento único: arquitetura + decisões + finops + reflexão
 ├── diagrama.png             # diagrama da arquitetura proposta
 ├── tools-spec.json          # ⭐ spec das 5 tools de referência (ver abaixo)
-└── poc/                     # ⭐ prova de conceito — só 1 ou 2 tools implementadas
+└── poc/                     # ⭐ as 5 tools rodando, reaproveitadas das Aulas 3 e 7
     ├── lambda_function.py   # (ou a pasta do seu código da Aula 7, reaproveitada)
-    └── terraform/           # reaproveita o padrão já usado na Aula 7
+    └── terraform/           # reaproveita o padrão já usado nas Aulas 3 e 7
 ```
 
 **Tamanho do ZIP:** < 10 MB. **Não incluir:** `terraform.tfstate*`, `.env`, `__pycache__/`, imagens/áudios de exemplo grandes (reaproveite os da Aula 7 por referência, não precisa reempacotar).
@@ -72,6 +76,44 @@ git archive --format=zip --prefix=trabalho-final-aws-grupo-NN/ \
 
 ---
 
+## Guia de componentes AWS
+
+Referência rápida pra preencher a tabela de arquitetura e as decisões técnicas do `projeto.md`. Separado em dois blocos: o que já foi testado nesta trilha (base sólida, pode citar com confiança) e o que não foi testado mas é válido considerar no desenho (o Critério A avalia a justificativa da escolha, não exige experiência prática com o serviço).
+
+### Já testado nesta trilha (Aulas 3 e 7)
+
+| Categoria | Serviço AWS | Onde foi usado |
+|---|---|---|
+| Compute serverless | Lambda | Todas as 5 tools de referência |
+| API | API Gateway (HTTP API) | Expõe as Lambdas por rota HTTP |
+| Armazenamento de objetos | S3 | Documentos, áudios, imagens de entrada e saída |
+| Banco relacional + vetorial | RDS PostgreSQL + pgvector | Chunker (indexação) e RAG (busca híbrida) |
+| Banco NoSQL | DynamoDB | NER (entidades) e Call Center Analytics (avaliações) |
+| Segredos | Secrets Manager | Senha do RDS |
+| Rede de saída | NAT Gateway | Rota da Lambda (dentro da VPC) até o Gemini |
+| Identidade | IAM (LabRole compartilhado) | Execução de todas as Lambdas |
+| Observabilidade | CloudWatch Logs | Logs de cada Lambda |
+| IA generativa (externa, não é AWS) | Gemini API (Google) | Texto, visão, áudio, embeddings — em todas as tools |
+| IA generativa (externa, não é AWS) | Hugging Face Spaces | Edição de imagem (FLUX) e geração de modelo 3D (TRELLIS) |
+
+### Outros componentes AWS a considerar (não testados em aula, mas válidos no desenho)
+
+A QC tem domínios que os labs não cobriram. Pode citá-los na arquitetura e nos ADRs como decisão de design — não precisa ter sido implementado para valer no Critério A.
+
+| Domínio | Opções AWS | Quando faria sentido |
+|---|---|---|
+| Compute para cargas longas/contínuas | ECS/Fargate, EC2 | Quando o teto de 15 min da Lambda não serve (ex: processamento em lote grande) |
+| CDN | CloudFront | Servir imagens de produto com baixa latência global |
+| Mensageria/filas | SQS, SNS | Desacoplar picos de carga (ex: campanha disparada em massa) |
+| Cache | ElastiCache (Redis) | Sessão de usuário, carrinho de compras ativo |
+| Identidade de cliente final | Cognito | Login do cliente da QC — diferente do LabRole, que é só para as Lambdas |
+| Observabilidade distribuída | X-Ray | Rastrear uma requisição que passa por várias Lambdas |
+| Segurança de borda | WAF | Proteger a API Gateway de abuso |
+| Catálogo de modelos gerenciado | Bedrock | Indisponível nesta conta AWS Academy — citar como opção conceitual, é exatamente o que embasa a decisão de usar Gemini direto |
+| ML gerenciado (treino/serving) | SageMaker | Seria o caminho pra um endpoint de recomendação de verdade — o equivalente ao `/recomendar` do projeto original; pode aparecer como decisão de design, sem exigir implementação |
+
+---
+
 ## Detalhes de cada peça
 
 ### 1. `projeto.md` — documento único
@@ -79,7 +121,7 @@ git archive --format=zip --prefix=trabalho-final-aws-grupo-NN/ \
 Um arquivo markdown com estas seções (não precisa ser mais de 3-4 páginas no total):
 
 #### Arquitetura proposta
-Diagrama + uma tabela de serviços AWS por domínio, com justificativa curta:
+Diagrama + uma tabela de serviços AWS por domínio, com justificativa curta. Use o [Guia de componentes AWS](#guia-de-componentes-aws) abaixo como referência:
 
 | Domínio | Serviço AWS | Justificativa |
 |---|---|---|
@@ -127,20 +169,26 @@ A arquitetura da QC se apoia em 5 capacidades, mapeadas direto dos exercícios d
 | `avaliar_atendimento` | Call Center Analytics | Transcreve e avalia uma ligação de atendimento |
 | `gerar_campanha` | Campanha de Marketing | Gera texto + imagem de campanha a partir da foto de um produto |
 
-Especifique as 5 no formato de function calling (nome, descrição que ensine o agente quando usar, schema de entrada, pelo menos 1 exemplo de uso cada) — **não precisa que as 5 estejam implementadas**, só bem especificadas.
+Especifique as 5 no formato de function calling (nome, descrição que ensine o agente quando usar, schema de entrada, pelo menos 1 exemplo de uso cada).
 
-### 3. `poc/` — prova de conceito
+### 3. `poc/` — as 5 tools rodando
 
-Escolha **pelo menos 1** (idealmente 2) das 5 tools acima e implemente de verdade, reaproveitando o código e o Terraform que o grupo já fez na Aula 7 — não é pra escrever do zero. Documente no `README.md` dentro de `poc/` como rodar.
+Reaproveite o código e o Terraform que o grupo já fez nas Aulas 3 e 7 — não é pra escrever nada do zero:
 
-**Critério de aceitação:** a tool escolhida responde a uma chamada real (`curl`) e isso está documentado (comando + saída, print ou texto colado).
+- **4 tools (RAG, NER, Call Center Analytics, Campanha de Marketing):** `terraform apply` no stack único da Aula 7 (já expõe todas atrás de um único API Gateway)
+- **1 tool (`buscar_produtos`):** `terraform apply` no stack da Aula 3
+
+Documente no `README.md` dentro de `poc/` como rodar os dois.
+
+**Critério de aceitação:** as 5 tools respondem a uma chamada real (`curl`) e isso está documentado (comando + saída, print ou texto colado) para cada uma.
+
+**Se alguma tool não rodar por limitação externa documentada** (ex: cota do ZeroGPU no Hugging Face esgotada, rate limit do Gemini), isso é aceitável — descreva a tentativa, cole o erro, e explique o que travou. Não precisa ficar tentando até funcionar.
 
 ---
 
 ## O que NÃO é mais exigido (em relação ao projeto final original)
 
-- Terraform único provisionando toda a infraestrutura de uma vez
-- As 5 tools implementadas e publicadas
+- Terraform novo provisionando camadas nunca ensinadas nesta trilha (Cosmos DB, Azure SQL, AI Search) — o Terraform exigido é só o que já existe das Aulas 3 e 7
 - Endpoint de ML/recomendação publicado (vira só uma linha de design em `projeto.md`, se o grupo quiser mencionar)
 - Managed Identity / IAM por tool — o LabRole compartilhado da Aula 7 é aceitável, com a ressalva já discutida em aula sobre revogação não ser por agente
 - `distribuicao-do-trabalho.md` separado — vira um parágrafo dentro do `projeto.md`
@@ -150,16 +198,16 @@ Escolha **pelo menos 1** (idealmente 2) das 5 tools acima e implemente de verdad
 ## Perguntas frequentes
 
 **Q: Precisamos rodar as 5 tools?**
-A: Não. Pelo menos 1 rodando de verdade (2 é melhor), as outras 4 só especificadas em `tools-spec.json`.
+A: Sim — mas reaproveitando o que já foi construído nas Aulas 3 e 7, não implementando do zero. Se alguma travar por limitação externa documentada (cota, rate limit), documentem a tentativa — não precisam ficar tentando até funcionar.
 
 **Q: Podemos reaproveitar o código da Aula 7 quase inteiro?**
-A: Sim — é esperado. O trabalho final testa se vocês conseguem **encaixar** o que já fizeram numa arquitetura maior e justificá-la, não reescrever do zero.
+A: Sim — é esperado, e é basicamente o ponto. O trabalho final testa se vocês conseguem **encaixar** o que já fizeram numa arquitetura maior e justificá-la, não reescrever do zero.
 
-**Q: E se o grupo quiser fazer mais do que o mínimo (ex: as 5 tools rodando)?**
-A: Ótimo, vale como diferencial na nota de Arquitetura e Conexão com Agentes — mas não é exigido nem traz pontos extras automáticos além do que a rubrica já cobre.
+**Q: Quando devemos reprovisionar o ambiente?**
+A: Com alguns dias de antecedência do prazo, não nos últimos 2 dias — veja o aviso em [O foco deste trabalho](#o-foco-deste-trabalho-arquitetura-não-deploy-complexo).
 
 **Q: O Terraform precisa rodar sem erro?**
-A: Só o da(s) tool(s) que estiver em `poc/` — reaproveitado da Aula 7, já deve rodar.
+A: Sim, para os dois stacks reaproveitados (Aula 3 e Aula 7) — já devem rodar, porque já rodaram antes.
 
 **Q: Podemos usar repositório público?**
 A: Não. Entrega via ZIP no Portal FIAP, mesma regra das entregas anteriores.
