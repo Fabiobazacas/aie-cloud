@@ -101,13 +101,3 @@ Segundo maior peso — é a outra metade do raciocínio que o trabalho quer test
 | 3-4 | Presente com lacunas pontuais |
 | 1-2 | Fragmentado — leitor externo precisa de esforço grande para entender |
 | 0 | Sem documentação coerente |
-
----
-
-## Observações finais
-
-1. **Atrasos:** -1 ponto por dia, sobre os 70 pts do Trabalho Final (até zerar essa parte)
-2. **Plágio entre grupos:** zera a entrega de todos os grupos envolvidos
-3. **Free riders:** mesma regra de `entregas/rubrica.md` — perda de participação se não houver contribuição em 2+ momentos consecutivos sem justificativa
-4. **Recuperação:** segue regulamento da FIAP
-5. **Casos excepcionais:** comunicar previamente ao professor
