@@ -25,10 +25,7 @@
 
 ## O foco deste trabalho: arquitetura, não deploy complexo
 
-O desenho original do projeto final (Azure) pedia um ZIP com 9 artefatos obrigatórios e uma arquitetura completa provisionada via Terraform (banco relacional + NoSQL + busca vetorial + 5 rotas de API + endpoint de ML). Para a trilha AWS, o foco muda de propósito:
-
-1. **As aulas 1, 2 e 5 nunca foram convertidas para AWS** — não existe uma base ensinada e testada em aula para esses serviços nesta trilha.
-2. **O objetivo pedagógico deste momento do curso é raciocínio arquitetural, não operação de infraestrutura.** Os trabalhos práticos já entregues provaram que o grupo sabe rodar Lambda + API Gateway + S3 + Gemini. O trabalho final não precisa repetir essa prova — precisa testar se o grupo sabe **desenhar e justificar** uma arquitetura maior a partir disso.
+O desenho original do projeto final (Azure) pedia um ZIP com 9 artefatos obrigatórios e uma arquitetura completa provisionada via Terraform (banco relacional + NoSQL + busca vetorial + 5 rotas de API + endpoint de ML). Para a trilha AWS, o foco muda de propósito: **o objetivo pedagógico deste momento do curso é raciocínio arquitetural, não operação de infraestrutura.** Os trabalhos práticos já entregues provaram que o grupo sabe rodar Lambda + API Gateway + S3 + Gemini. O trabalho final não precisa repetir essa prova — precisa testar se o grupo sabe **desenhar e justificar** uma arquitetura AWS completa para a Quantum Commerce a partir disso, cobrindo cada domínio do case (catálogo, busca/RAG, extração de dados, atendimento, marketing) com os serviços que fazem sentido — use o [Guia de componentes AWS](#guia-de-componentes-aws) como referência.
 
 Por isso, o trabalho final pede **um documento de arquitetura e decisão** (peso maior, é o que de fato está sendo avaliado) + **as 5 funcionalidades de referência rodando, reaproveitadas da Aula 3 e dos trabalhos práticos já entregues** (peso menor, só para ancorar o desenho em algo real) — em vez de exigir infraestrutura nova e complexa provisionada do zero para toda a Quantum Commerce.
 
