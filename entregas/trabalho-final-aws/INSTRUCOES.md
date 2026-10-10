@@ -5,9 +5,6 @@
 **Prazo:** 1 semana após a Aula 6
 **Rubrica:** [rubrica.md](rubrica.md), nesta mesma pasta
 
-> **Esta pasta substitui `entregas/projeto-final/` para quem seguiu a trilha AWS.**
-> O `entregas/projeto-final/INSTRUCOES.md` original e a `entregas/rubrica.md` descrevem uma arquitetura Azure (Cosmos DB, Azure SQL, AI Search, Azure ML Online Endpoint) que esta turma não construiu. O motivo e o mapeamento completo da divergência estão em [`entregas/DIVERGENCIA-TRILHA-AWS.md`](../DIVERGENCIA-TRILHA-AWS.md).
-
 ---
 
 ## Composição da nota
@@ -25,9 +22,9 @@
 
 ## O foco deste trabalho: arquitetura, não deploy complexo
 
-O desenho original do projeto final (Azure) pedia um ZIP com 9 artefatos obrigatórios e uma arquitetura completa provisionada via Terraform (banco relacional + NoSQL + busca vetorial + 5 rotas de API + endpoint de ML). Para a trilha AWS, o foco muda de propósito: **o objetivo pedagógico deste momento do curso é raciocínio arquitetural, não operação de infraestrutura.** Os trabalhos práticos já entregues provaram que o grupo sabe rodar Lambda + API Gateway + S3 + Gemini. O trabalho final não precisa repetir essa prova — precisa testar se o grupo sabe **desenhar e justificar** uma arquitetura AWS completa para a Quantum Commerce a partir disso, cobrindo cada domínio do case (catálogo, busca/RAG, extração de dados, atendimento, marketing) com os serviços que fazem sentido — use o [Guia de componentes AWS](#guia-de-componentes-aws) como referência.
+**O objetivo pedagógico deste momento do curso é raciocínio arquitetural, não operação de infraestrutura.** Os trabalhos práticos já entregues provaram que o grupo sabe rodar Lambda + API Gateway + S3 + Gemini. O trabalho final testa se o grupo sabe **desenhar e justificar** uma arquitetura AWS completa para a Quantum Commerce a partir disso, cobrindo cada domínio do case (catálogo, busca/RAG, extração de dados, atendimento, marketing) com os serviços que fazem sentido — use o [Guia de componentes AWS](#guia-de-componentes-aws) como referência.
 
-Por isso, o trabalho final pede **um documento de arquitetura e decisão** (peso maior, é o que de fato está sendo avaliado) + **as 5 funcionalidades de referência rodando, reaproveitadas da Aula 3 e dos trabalhos práticos já entregues** (peso menor, só para ancorar o desenho em algo real) — em vez de exigir infraestrutura nova e complexa provisionada do zero para toda a Quantum Commerce.
+Por isso, o trabalho final pede **um documento de arquitetura e decisão** (peso maior, é o que de fato está sendo avaliado) + **as 5 funcionalidades de referência rodando, reaproveitadas da Aula 3 e dos trabalhos práticos já entregues** (peso menor, só para ancorar o desenho em algo real).
 
 > **Isso não é implementação nova.** 4 das 5 tools (RAG, NER, Call Center Analytics, Campanha de Marketing) já rodam hoje atrás de **um único API Gateway**, no mesmo stack Terraform que o grupo já construiu nos trabalhos práticos — a integração entre elas já existe. A 5ª (`buscar_produtos`) vem de um stack separado, da Aula 3. "Reaproveitar" aqui significa, literalmente, rodar `terraform apply` de novo nesses dois stacks e confirmar que ainda respondem — não escrever nada do zero.
 >
@@ -107,7 +104,7 @@ A QC tem domínios que os labs não cobriram. Pode citá-los na arquitetura e no
 | Observabilidade distribuída | X-Ray | Rastrear uma requisição que passa por várias Lambdas |
 | Segurança de borda | WAF | Proteger a API Gateway de abuso |
 | Catálogo de modelos gerenciado | Bedrock | Indisponível nesta conta AWS Academy — citar como opção conceitual, é exatamente o que embasa a decisão de usar Gemini direto |
-| ML gerenciado (treino/serving) | SageMaker | Seria o caminho pra um endpoint de recomendação de verdade — o equivalente ao `/recomendar` do projeto original; pode aparecer como decisão de design, sem exigir implementação |
+| ML gerenciado (treino/serving) | SageMaker | Seria o caminho pra um endpoint de recomendação de verdade; pode aparecer como decisão de design, sem exigir implementação |
 
 ---
 
@@ -183,12 +180,12 @@ Documente no `README.md` dentro de `poc/` como rodar os dois.
 
 ---
 
-## O que NÃO é mais exigido (em relação ao projeto final original)
+## Esclarecimentos de escopo
 
-- Terraform novo provisionando camadas nunca ensinadas nesta trilha (Cosmos DB, Azure SQL, AI Search) — o Terraform exigido é só o que já existe da Aula 3 e dos trabalhos práticos
-- Endpoint de ML/recomendação publicado (vira só uma linha de design em `projeto.md`, se o grupo quiser mencionar)
-- Managed Identity / IAM por tool — o LabRole compartilhado usado nos trabalhos práticos é aceitável, com a ressalva já discutida em aula sobre revogação não ser por agente
-- `distribuicao-do-trabalho.md` separado — vira um parágrafo dentro do `projeto.md`
+- O Terraform exigido é o que já existe da Aula 3 e dos trabalhos práticos — não é necessário provisionar camadas adicionais
+- Um endpoint de ML/recomendação publicado é opcional: se o grupo quiser mencionar, basta uma linha de design em `projeto.md`
+- Para IAM, o LabRole compartilhado usado nos trabalhos práticos é aceitável, com a ressalva já discutida em aula sobre revogação não ser por agente
+- A distribuição do trabalho entre os membros do grupo vira um parágrafo dentro do `projeto.md`, sem precisar de um arquivo separado
 
 ---
 
